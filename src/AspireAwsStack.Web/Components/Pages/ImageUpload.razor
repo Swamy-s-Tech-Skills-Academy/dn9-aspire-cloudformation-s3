@@ -68,7 +68,7 @@
                             </div>
 
                             <div class="d-grid gap-2">
-                                <button class="btn btn-primary btn-lg" onclick="@UploadImage" disabled="@isUploading">
+                                <button class="btn btn-primary btn-lg" @onclick="UploadImage" disabled="@isUploading">
                                     @if (isUploading)
                                     {
                                         <span class="spinner-border spinner-border-sm me-2" role="status"></span>
@@ -123,10 +123,9 @@
                                                  style="height: 200px; object-fit: cover;" 
                                                  alt="@image.FileName"
                                                  loading="lazy" />
-                                            <div class="position-absolute top-0 end-0 m-2">
-                                                <button class="btn btn-sm btn-outline-light" 
-                                                        onclick="@(() => CopyToClipboard(image.Url))"
-                                                        title="Copy URL">
+                                            <div class="position-absolute top-0 end-0 m-2">                                <button class="btn btn-sm btn-outline-light" 
+                                        @onclick="@(() => CopyToClipboard(image.Url))"
+                                        title="Copy URL">
                                                     <i class="fas fa-copy"></i>
                                                 </button>
                                             </div>

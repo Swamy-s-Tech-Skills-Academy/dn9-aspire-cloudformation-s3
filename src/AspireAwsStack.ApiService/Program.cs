@@ -11,11 +11,13 @@ builder.AddServiceDefaults();
 
 // Add services to the container.
 builder.Services.AddProblemDetails();
+builder.Services.AddAntiforgery();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 // Configure AWS S3
+builder.Services.AddScoped<IAmazonS3, AmazonS3Client>();
 builder.Services.AddScoped<IS3ImageService, S3ImageService>();
 
 // Add CORS for Blazor app
@@ -34,6 +36,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
 app.UseCors("BlazorPolicy");
+app.UseAntiforgery();
 
 if (app.Environment.IsDevelopment())
 {

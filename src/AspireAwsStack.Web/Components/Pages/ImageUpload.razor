@@ -3,6 +3,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @inject IImageUploadService ImageUploadService
 @inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
 
 <h1>Image Upload - S3 Integration</h1>
 
@@ -44,16 +45,9 @@
                             <div class="form-text">
                                 Supported formats: JPG, PNG, GIF, WebP, BMP (Max: 10MB)
                             </div>
-                        </div>
-
-                        <!-- Debug info -->
-                        <div class="alert alert-info">
-                            <strong>Debug:</strong> selectedFile is @(selectedFile != null ? "NOT NULL" : "NULL")
-                            @if (selectedFile != null)
-                            {
-                                <br />
-                                File name: @selectedFile.Name
-                                                        }
+                            <!-- Debug info -->
+                            <small class="text-muted">Debug: selectedFile is @(selectedFile != null ? "NOT NULL" :
+                                                                "NULL")</small>
                         </div>
 
                         @if (selectedFile != null)
@@ -172,14 +166,14 @@
     private string? successMessage;
     private readonly List<ImageUploadResult> uploadedImages = new();
 
-    private void OnFileSelected(InputFileChangeEventArgs e)
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
     {
         Console.WriteLine($"OnFileSelected called with {e.FileCount} files");
         selectedFile = e.File;
         Console.WriteLine($"Selected file: {selectedFile?.Name}");
         errorMessage = null;
         successMessage = null;
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task UploadImage()
@@ -256,4 +250,4 @@
         }
         return $"{len:0.##} {sizes[order]}";
     }
-}
+}}

@@ -1,3 +1,4 @@
+using AspireAwsStack.ServiceDefaults;
 using AspireAwsStack.Web;
 using AspireAwsStack.Web.Components;
 

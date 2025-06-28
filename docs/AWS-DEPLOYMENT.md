@@ -129,9 +129,23 @@ docker push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/aspire-api:latest
 docker push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/aspire-web:latest
 ```
 
-### **Step 3: Complete CloudFormation Template**
+### **Step 3: Deploy with Complete CloudFormation Template**
 
-Create a production-ready CloudFormation template with all necessary resources:
+We've created a complete, production-ready CloudFormation template that includes all necessary resources for a robust ECS deployment:
+
+**Key Features:**
+
+- ✅ **Complete VPC setup** with public/private subnets across 2 AZs
+- ✅ **Dual NAT Gateways** for high availability and outbound internet access
+- ✅ **Application Load Balancer** with proper routing rules
+- ✅ **Auto Scaling** for both API and Web services based on CPU utilization
+- ✅ **Health Checks** with circuit breaker deployment configuration
+- ✅ **CloudWatch Monitoring** with Container Insights and custom alarms
+- ✅ **Production Security** with least-privilege IAM roles and security groups
+- ✅ **S3 Integration** with proper bucket policies and CORS configuration
+- ✅ **Separate Task Definitions** for better isolation and scaling
+
+Use the complete template located at `src/AspireAwsStack.AppHost/infrastructure/ecs-complete-stack.yaml`:
 
 ```json
 {
@@ -199,40 +213,40 @@ Create a production-ready CloudFormation template with all necessary resources:
 
 ```yaml
 # infrastructure/ecs-complete-stack.yaml
-AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Complete Aspire AWS Stack with ECS Fargate, ALB, and VPC'
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Complete Aspire AWS Stack with ECS Fargate, ALB, and VPC"
 
 Parameters:
   EnvironmentName:
     Description: Environment name prefix
     Type: String
-    Default: 'aspire-prod'
-  
+    Default: "aspire-prod"
+
   VpcCIDR:
     Description: CIDR block for VPC
     Type: String
-    Default: '10.0.0.0/16'
-  
+    Default: "10.0.0.0/16"
+
   PublicSubnet1CIDR:
     Type: String
-    Default: '10.0.1.0/24'
-  
+    Default: "10.0.1.0/24"
+
   PublicSubnet2CIDR:
     Type: String
-    Default: '10.0.2.0/24'
-  
+    Default: "10.0.2.0/24"
+
   PrivateSubnet1CIDR:
     Type: String
-    Default: '10.0.3.0/24'
-  
+    Default: "10.0.3.0/24"
+
   PrivateSubnet2CIDR:
     Type: String
-    Default: '10.0.4.0/24'
+    Default: "10.0.4.0/24"
 
   ApiImageUri:
     Description: ECR URI for API service
     Type: String
-    
+
   WebImageUri:
     Description: ECR URI for Web service
     Type: String
@@ -271,7 +285,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [0, !GetAZs '']
+      AvailabilityZone: !Select [0, !GetAZs ""]
       CidrBlock: !Ref PublicSubnet1CIDR
       MapPublicIpOnLaunch: true
       Tags:
@@ -282,7 +296,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [1, !GetAZs '']
+      AvailabilityZone: !Select [1, !GetAZs ""]
       CidrBlock: !Ref PublicSubnet2CIDR
       MapPublicIpOnLaunch: true
       Tags:
@@ -294,7 +308,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [0, !GetAZs '']
+      AvailabilityZone: !Select [0, !GetAZs ""]
       CidrBlock: !Ref PrivateSubnet1CIDR
       Tags:
         - Key: Name
@@ -304,7 +318,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [1, !GetAZs '']
+      AvailabilityZone: !Select [1, !GetAZs ""]
       CidrBlock: !Ref PrivateSubnet2CIDR
       Tags:
         - Key: Name
@@ -471,7 +485,7 @@ Resources:
           TargetGroupArn: !Ref ApiTargetGroup
       Conditions:
         - Field: path-pattern
-          Values: ['/api/*']
+          Values: ["/api/*"]
       ListenerArn: !Ref ALBListener
       Priority: 100
 
@@ -518,7 +532,7 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                   - s3:DeleteObject
-                Resource: !Sub 'arn:aws:s3:::${S3BucketName}/*'
+                Resource: !Sub "arn:aws:s3:::${S3BucketName}/*"
 
   # CloudWatch Logs
   CloudWatchLogsGroup:

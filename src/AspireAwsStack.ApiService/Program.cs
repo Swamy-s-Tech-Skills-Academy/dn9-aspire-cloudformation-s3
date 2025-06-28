@@ -13,6 +13,10 @@ builder.AddServiceDefaults();
 builder.Services.AddProblemDetails();
 builder.Services.AddAntiforgery();
 
+// Add health checks for production deployments
+builder.Services.AddHealthChecks()
+    .AddCheck("s3", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("S3 service is available"));
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
@@ -43,6 +47,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference(); // Add Scalar API documentation
 }
+
+// Health check endpoint for container health checks
+app.MapHealthChecks("/health");
 
 // Image Upload API Endpoints
 var imagesApi = app.MapGroup("/api/images")

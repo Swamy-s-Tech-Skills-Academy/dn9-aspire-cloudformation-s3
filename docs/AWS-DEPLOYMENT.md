@@ -43,9 +43,13 @@ EXPOSE 8081
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
+
+# Copy project files and restore dependencies (optimizes Docker layer caching)
 COPY ["src/AspireAwsStack.ApiService/AspireAwsStack.ApiService.csproj", "src/AspireAwsStack.ApiService/"]
 COPY ["src/AspireAwsStack.ServiceDefaults/AspireAwsStack.ServiceDefaults.csproj", "src/AspireAwsStack.ServiceDefaults/"]
 RUN dotnet restore "src/AspireAwsStack.ApiService/AspireAwsStack.ApiService.csproj"
+
+# Copy all source code
 COPY . .
 WORKDIR "/src/src/AspireAwsStack.ApiService"
 RUN dotnet build "AspireAwsStack.ApiService.csproj" -c Release -o /app/build
@@ -56,6 +60,11 @@ RUN dotnet publish "AspireAwsStack.ApiService.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# Add health check endpoint
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+
 ENTRYPOINT ["dotnet", "AspireAwsStack.ApiService.dll"]
 ```
 
@@ -70,9 +79,13 @@ EXPOSE 8081
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
+
+# Copy project files and restore dependencies (optimizes Docker layer caching)
 COPY ["src/AspireAwsStack.Web/AspireAwsStack.Web.csproj", "src/AspireAwsStack.Web/"]
 COPY ["src/AspireAwsStack.ServiceDefaults/AspireAwsStack.ServiceDefaults.csproj", "src/AspireAwsStack.ServiceDefaults/"]
 RUN dotnet restore "src/AspireAwsStack.Web/AspireAwsStack.Web.csproj"
+
+# Copy all source code
 COPY . .
 WORKDIR "/src/src/AspireAwsStack.Web"
 RUN dotnet build "AspireAwsStack.Web.csproj" -c Release -o /app/build
@@ -83,10 +96,42 @@ RUN dotnet publish "AspireAwsStack.Web.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# Add health check endpoint
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+
 ENTRYPOINT ["dotnet", "AspireAwsStack.Web.dll"]
 ```
 
-### **Step 2: Create ECS Task Definition**
+### **Step 2: Build and Push to ECR**
+
+Create ECR repositories and push images:
+
+```bash
+# Create ECR repositories
+aws ecr create-repository --repository-name aspire-api --region us-east-1
+aws ecr create-repository --repository-name aspire-web --region us-east-1
+
+# Get login token
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+
+# Build and tag images
+docker build -f src/AspireAwsStack.ApiService/Dockerfile -t aspire-api .
+docker build -f src/AspireAwsStack.Web/Dockerfile -t aspire-web .
+
+# Tag for ECR
+docker tag aspire-api:latest $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/aspire-api:latest
+docker tag aspire-web:latest $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/aspire-web:latest
+
+# Push to ECR
+docker push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/aspire-api:latest
+docker push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/aspire-web:latest
+```
+
+### **Step 3: Complete CloudFormation Template**
+
+Create a production-ready CloudFormation template with all necessary resources:
 
 ```json
 {
@@ -150,40 +195,576 @@ ENTRYPOINT ["dotnet", "AspireAwsStack.Web.dll"]
 }
 ```
 
-### **Step 3: Deploy with CloudFormation**
+Create a production-ready CloudFormation template with all necessary resources:
 
-Create an enhanced CloudFormation template that includes ECS resources:
+```yaml
+# infrastructure/ecs-complete-stack.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Complete Aspire AWS Stack with ECS Fargate, ALB, and VPC'
 
-```json
-{
-  "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Complete Aspire AWS Stack with ECS deployment",
-  "Resources": {
-    "VPC": {
-      "Type": "AWS::EC2::VPC",
-      "Properties": {
-        "CidrBlock": "10.0.0.0/16",
-        "EnableDnsHostnames": true,
-        "EnableDnsSupport": true
-      }
-    },
-    "ECSCluster": {
-      "Type": "AWS::ECS::Cluster",
-      "Properties": {
-        "ClusterName": "aspire-aws-stack-cluster"
-      }
-    },
-    "ECSService": {
-      "Type": "AWS::ECS::Service",
-      "Properties": {
-        "Cluster": { "Ref": "ECSCluster" },
-        "TaskDefinition": { "Ref": "ECSTaskDefinition" },
-        "DesiredCount": 2,
-        "LaunchType": "FARGATE"
-      }
-    }
-  }
-}
+Parameters:
+  EnvironmentName:
+    Description: Environment name prefix
+    Type: String
+    Default: 'aspire-prod'
+  
+  VpcCIDR:
+    Description: CIDR block for VPC
+    Type: String
+    Default: '10.0.0.0/16'
+  
+  PublicSubnet1CIDR:
+    Type: String
+    Default: '10.0.1.0/24'
+  
+  PublicSubnet2CIDR:
+    Type: String
+    Default: '10.0.2.0/24'
+  
+  PrivateSubnet1CIDR:
+    Type: String
+    Default: '10.0.3.0/24'
+  
+  PrivateSubnet2CIDR:
+    Type: String
+    Default: '10.0.4.0/24'
+
+  ApiImageUri:
+    Description: ECR URI for API service
+    Type: String
+    
+  WebImageUri:
+    Description: ECR URI for Web service
+    Type: String
+
+  S3BucketName:
+    Description: S3 bucket name for images
+    Type: String
+
+Resources:
+  # VPC and Networking
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-VPC
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-IGW
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  # Public Subnets
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ1)
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ2)
+
+  # Private Subnets
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ1)
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ2)
+
+  # NAT Gateways
+  NatGateway1EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway1EIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+
+  # Route Tables
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Routes
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Routes (AZ1)
+
+  DefaultPrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet1
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet2
+
+  # Security Groups
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Application Load Balancer
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-ALB-SG
+
+  ECSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ECS tasks
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-ECS-SG
+
+  # Application Load Balancer
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${EnvironmentName}-ALB
+      Scheme: internet-facing
+      Type: application
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref WebTargetGroup
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  # Target Groups
+  WebTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub ${EnvironmentName}-Web-TG
+      Port: 8080
+      Protocol: HTTP
+      VpcId: !Ref VPC
+      TargetType: ip
+      HealthCheckPath: /health
+      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 5
+
+  ApiTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub ${EnvironmentName}-Api-TG
+      Port: 8080
+      Protocol: HTTP
+      VpcId: !Ref VPC
+      TargetType: ip
+      HealthCheckPath: /health
+      HealthCheckProtocol: HTTP
+
+  # API Listener Rule
+  ApiListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref ApiTargetGroup
+      Conditions:
+        - Field: path-pattern
+          Values: ['/api/*']
+      ListenerArn: !Ref ALBListener
+      Priority: 100
+
+  # ECS Cluster
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub ${EnvironmentName}-cluster
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+
+  # IAM Roles
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub 'arn:aws:s3:::${S3BucketName}/*'
+
+  # CloudWatch Logs
+  CloudWatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /ecs/${EnvironmentName}
+      RetentionInDays: 7
+
+  # Separate Task Definitions for Better Isolation
+  ApiTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub ${EnvironmentName}-api-task
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: 256
+      Memory: 512
+      ExecutionRoleArn: !Ref ECSTaskExecutionRole
+      TaskRoleArn: !Ref ECSTaskRole
+      ContainerDefinitions:
+        - Name: api-service
+          Image: !Ref ApiImageUri
+          PortMappings:
+            - ContainerPort: 8080
+              Protocol: tcp
+          Environment:
+            - Name: S3_BUCKET_NAME
+              Value: !Ref S3BucketName
+            - Name: ASPNETCORE_ENVIRONMENT
+              Value: Production
+            - Name: ASPNETCORE_URLS
+              Value: http://+:8080
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref CloudWatchLogsGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: api
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - curl -f http://localhost:8080/health || exit 1
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+
+  WebTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub ${EnvironmentName}-web-task
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: 256
+      Memory: 512
+      ExecutionRoleArn: !Ref ECSTaskExecutionRole
+      TaskRoleArn: !Ref ECSTaskRole
+      ContainerDefinitions:
+        - Name: web-service
+          Image: !Ref WebImageUri
+          PortMappings:
+            - ContainerPort: 8080
+              Protocol: tcp
+          Environment:
+            - Name: API_SERVICE_URL
+              Value: !Sub http://${ApplicationLoadBalancer.DNSName}/api
+            - Name: ASPNETCORE_ENVIRONMENT
+              Value: Production
+            - Name: ASPNETCORE_URLS
+              Value: http://+:8080
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref CloudWatchLogsGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: web
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - curl -f http://localhost:8080/health || exit 1
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+
+  # ECS Services
+  ApiService:
+    Type: AWS::ECS::Service
+    DependsOn: ApiListenerRule
+    Properties:
+      ServiceName: !Sub ${EnvironmentName}-api-service
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref ApiTaskDefinition
+      DesiredCount: 2
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - !Ref ECSSecurityGroup
+          Subnets:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+          AssignPublicIp: DISABLED
+      LoadBalancers:
+        - ContainerName: api-service
+          ContainerPort: 8080
+          TargetGroupArn: !Ref ApiTargetGroup
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+        RollingUpdateConfig:
+          MaximumPercent: 200
+          MinimumHealthyPercent: 100
+
+  WebService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListener
+    Properties:
+      ServiceName: !Sub ${EnvironmentName}-web-service
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref WebTaskDefinition
+      DesiredCount: 2
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - !Ref ECSSecurityGroup
+          Subnets:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+          AssignPublicIp: DISABLED
+      LoadBalancers:
+        - ContainerName: web-service
+          ContainerPort: 8080
+          TargetGroupArn: !Ref WebTargetGroup
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+        RollingUpdateConfig:
+          MaximumPercent: 200
+          MinimumHealthyPercent: 100
+
+  # Auto Scaling
+  ApiAutoScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: 10
+      MinCapacity: 2
+      ResourceId: !Sub service/${ECSCluster}/${ApiService.Name}
+      RoleARN: !Sub arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  ApiAutoScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Sub ${EnvironmentName}-api-scaling-policy
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref ApiAutoScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        TargetValue: 70
+
+  WebAutoScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: 10
+      MinCapacity: 2
+      ResourceId: !Sub service/${ECSCluster}/${WebService.Name}
+      RoleARN: !Sub arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  WebAutoScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Sub ${EnvironmentName}-web-scaling-policy
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref WebAutoScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        TargetValue: 70
+
+Outputs:
+  VPC:
+    Description: VPC ID
+    Value: !Ref VPC
+    Export:
+      Name: !Sub ${EnvironmentName}-VPC
+
+  LoadBalancerUrl:
+    Description: Load Balancer URL
+    Value: !Sub http://${ApplicationLoadBalancer.DNSName}
+    Export:
+      Name: !Sub ${EnvironmentName}-ALB-URL
+
+  ApiUrl:
+    Description: API Service URL
+    Value: !Sub http://${ApplicationLoadBalancer.DNSName}/api
+    Export:
+      Name: !Sub ${EnvironmentName}-API-URL
+
+  ECSCluster:
+    Description: ECS Cluster Name
+    Value: !Ref ECSCluster
+    Export:
+      Name: !Sub ${EnvironmentName}-ECSCluster
+
+  ApiService:
+    Description: API Service Name
+    Value: !Ref ApiService
+    Export:
+      Name: !Sub ${EnvironmentName}-ApiService
+
+  WebService:
+    Description: Web Service Name
+    Value: !Ref WebService
+    Export:
+      Name: !Sub ${EnvironmentName}-WebService
+```
+
+### **Step 4: Deploy the Stack**
+
+Deploy using AWS CLI:
+
+```bash
+# Deploy the complete stack
+aws cloudformation deploy \
+  --template-file infrastructure/ecs-complete-stack.yaml \
+  --stack-name aspire-ecs-stack \
+  --parameter-overrides \
+    EnvironmentName=aspire-prod \
+    ApiImageUri=$AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/aspire-api:latest \
+    WebImageUri=$AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/aspire-web:latest \
+    S3BucketName=aspire-aws-images-prod \
+  --capabilities CAPABILITY_IAM
+
+# Get the Load Balancer URL
+aws cloudformation describe-stacks \
+  --stack-name aspire-ecs-stack \
+  --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerUrl`].OutputValue' \
+  --output text
 ```
 
 ## 🌐 Option 2: AWS Elastic Beanstalk

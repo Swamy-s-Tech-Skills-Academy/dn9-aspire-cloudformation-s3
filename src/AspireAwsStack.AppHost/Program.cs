@@ -17,6 +17,7 @@ IResourceBuilder<RedisResource> cache = builder.AddRedis("cache");
 IResourceBuilder<ProjectResource> apiService = builder.AddProject<Projects.AspireAwsStack_ApiService>("apiservice")
                                                     .WithReference(cloudFormationStack)
                                                     .WaitFor(cloudFormationStack)
+                                                    .WithEnvironment("AWS__S3__BucketName", cloudFormationStack.GetOutput("BucketName"))
                                                     .WithReference(cache)
                                                     .WaitFor(cache);
 

@@ -1,6 +1,7 @@
 using AspireAwsStack.ServiceDefaults;
 using AspireAwsStack.Web;
 using AspireAwsStack.Web.Components;
+using AspireAwsStack.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,12 @@ builder.Services.AddHttpClient<WeatherApiClient>(client =>
     {
         // This URL uses "https+http://" to indicate HTTPS is preferred over HTTP.
         // Learn more about service discovery scheme resolution at https://aka.ms/dotnet/sdschemes.
+        client.BaseAddress = new("https+http://apiservice");
+    });
+
+// Add Image Upload Service
+builder.Services.AddHttpClient<IImageUploadService, ImageUploadService>(client =>
+    {
         client.BaseAddress = new("https+http://apiservice");
     });
 

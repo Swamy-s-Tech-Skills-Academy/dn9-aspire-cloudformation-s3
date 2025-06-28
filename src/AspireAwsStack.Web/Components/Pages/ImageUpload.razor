@@ -1,0 +1,251 @@
+@page "/images"
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@inject IImageUploadService ImageUploadService
+@inject IJSRuntime JSRuntime
+
+<h1>Image Upload - S3 Integration</h1>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-cloud-upload-alt me-2"></i>
+                        Upload Images to AWS S3
+                    </h3>
+                </div>
+                <div class="card-body">
+                    
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            @errorMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>
+                            @successMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <div class="upload-section">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Select Image File</label>
+                            <InputFile OnChange="OnFileSelected" class="form-control" accept="image/*" disabled="@isUploading" />
+                            <div class="form-text">
+                                Supported formats: JPG, PNG, GIF, WebP, BMP (Max: 10MB)
+                            </div>
+                        </div>
+
+                        @if (selectedFile != null)
+                        {
+                            <div class="card bg-light mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">Selected File</h6>
+                                    <div class="row">
+                                        <div class="col-sm-6">
+                                            <strong>Name:</strong> @selectedFile.Name
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <strong>Size:</strong> @FormatFileSize(selectedFile.Size)
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <strong>Type:</strong> @selectedFile.ContentType
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <strong>Last Modified:</strong> @selectedFile.LastModified.ToString("g")
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary btn-lg" onclick="@UploadImage" disabled="@isUploading">
+                                    @if (isUploading)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <span>Uploading...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-upload me-2"></i>
+                                        <span>Upload to S3</span>
+                                    }
+                                </button>
+                            </div>
+                        }
+
+                        @if (uploadProgress > 0 && uploadProgress < 100)
+                        {
+                            <div class="mt-3">
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                         role="progressbar" 
+                                         style="width: @(uploadProgress)%" 
+                                         aria-valuenow="@uploadProgress" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        @uploadProgress%
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @if (uploadedImages.Any())
+            {
+                <div class="card shadow mt-4">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-images me-2"></i>
+                            Uploaded Images (@uploadedImages.Count)
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            @foreach (var image in uploadedImages.OrderByDescending(i => i.UploadedAt))
+                            {
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card h-100">
+                                        <div class="position-relative">
+                                            <img src="@image.Url" 
+                                                 class="card-img-top" 
+                                                 style="height: 200px; object-fit: cover;" 
+                                                 alt="@image.FileName"
+                                                 loading="lazy" />
+                                            <div class="position-absolute top-0 end-0 m-2">
+                                                <button class="btn btn-sm btn-outline-light" 
+                                                        onclick="@(() => CopyToClipboard(image.Url))"
+                                                        title="Copy URL">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <h6 class="card-title text-truncate" title="@image.FileName">
+                                                @image.FileName
+                                            </h6>
+                                            <p class="card-text small text-muted">
+                                                <strong>Size:</strong> @FormatFileSize(image.SizeInBytes)<br/>
+                                                <strong>Type:</strong> @image.ContentType<br/>
+                                                <strong>Uploaded:</strong> @image.UploadedAt.ToString("g")
+                                            </p>
+                                            <div class="d-grid gap-2">
+                                                <a href="@image.Url" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-external-link-alt me-1"></i>
+                                                    View Full Size
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private IBrowserFile? selectedFile;
+    private bool isUploading = false;
+    private int uploadProgress = 0;
+    private string? errorMessage;
+    private string? successMessage;
+    private readonly List<ImageUploadResult> uploadedImages = new();
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        errorMessage = null;
+        successMessage = null;
+        StateHasChanged();
+    }
+
+    private async Task UploadImage()
+    {
+        if (selectedFile == null) return;
+
+        try
+        {
+            isUploading = true;
+            uploadProgress = 0;
+            errorMessage = null;
+            successMessage = null;
+            StateHasChanged();
+
+            // Simulate progress for better UX
+            var progressTimer = new Timer(_ =>
+            {
+                if (uploadProgress < 90)
+                {
+                    uploadProgress += 10;
+                    InvokeAsync(StateHasChanged);
+                }
+            }, null, TimeSpan.FromMilliseconds(200), TimeSpan.FromMilliseconds(300));
+
+            var result = await ImageUploadService.UploadImageAsync(selectedFile);
+            
+            progressTimer.Dispose();
+            uploadProgress = 100;
+            StateHasChanged();
+
+            if (result != null)
+            {
+                uploadedImages.Add(result);
+                successMessage = $"Successfully uploaded '{result.FileName}' to S3!";
+                selectedFile = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Upload failed: {ex.Message}";
+        }
+        finally
+        {
+            isUploading = false;
+            uploadProgress = 0;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CopyToClipboard(string text)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+            successMessage = "URL copied to clipboard!";
+            StateHasChanged();
+        }
+        catch
+        {
+            // Fallback for older browsers
+            await JSRuntime.InvokeVoidAsync("prompt", "Copy this URL:", text);
+        }
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len /= 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}

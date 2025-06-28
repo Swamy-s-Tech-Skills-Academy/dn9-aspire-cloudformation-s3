@@ -224,7 +224,8 @@ dn9-aspire-cloudformation-s3/
 │   └── AspireAwsStack.ServiceDefaults/   # Shared configurations
 │       └── Extensions.cs               # Common service extensions
 ├── docs/
-│   └── images/                         # Documentation assets
+│   ├── images/                         # Documentation assets
+│   └── AWS-DEPLOYMENT.md               # Complete AWS deployment guide
 ├── .github/
 │   └── workflows/                      # CI/CD pipelines (empty)
 ├── Directory.Build.props               # Build configuration
@@ -353,6 +354,39 @@ After deletion, restart the Aspire AppHost and the stack will be recreated autom
 - 🖼️ **Thumbnail Generation** - Automatic image optimization
 - 🔐 **Advanced Security** - Pre-signed URLs and bucket policies
 - 🗑️ **Image Management** - Delete and list operations via API
+
+## 🚀 Production Deployment
+
+Ready to deploy your .NET Aspire application to AWS? We've prepared a comprehensive deployment guide covering multiple strategies:
+
+### **� [Complete AWS Deployment Guide](docs/AWS-DEPLOYMENT.md)**
+
+The deployment guide covers:
+
+- **🐳 AWS ECS (Recommended)** - Container-based deployment with Fargate
+- **🌐 Elastic Beanstalk** - Simple web app deployment
+- **☁️ AWS Lambda** - Serverless functions for APIs
+- **⚡ Kubernetes (EKS)** - Enterprise-grade container orchestration
+
+### **Quick Deployment Options**
+
+| Strategy              | Complexity | Best For             | Guide Link                                                                |
+| --------------------- | ---------- | -------------------- | ------------------------------------------------------------------------- |
+| **ECS Fargate**       | Medium     | Production workloads | [ECS Guide](docs/AWS-DEPLOYMENT.md#-option-1-aws-ecs-recommended)         |
+| **Elastic Beanstalk** | Low        | Simple web apps      | [Beanstalk Guide](docs/AWS-DEPLOYMENT.md#-option-2-aws-elastic-beanstalk) |
+| **Lambda**            | Medium     | Event-driven APIs    | [Lambda Guide](docs/AWS-DEPLOYMENT.md#️-option-3-aws-lambda-serverless)   |
+
+### **🎯 What's Included in the Deployment Guide**
+
+- ✅ **Dockerfiles** for containerization
+- ✅ **CloudFormation templates** for infrastructure
+- ✅ **CI/CD pipelines** with GitHub Actions
+- ✅ **Security best practices** and IAM configurations
+- ✅ **Monitoring setup** with CloudWatch and X-Ray
+- ✅ **Production configuration** examples
+- ✅ **Troubleshooting guide** for common issues
+
+📋 **[View Complete Deployment Guide →](docs/AWS-DEPLOYMENT.md)**
 
 ## 🤝 Contributing
 

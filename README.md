@@ -225,7 +225,8 @@ dn9-aspire-cloudformation-s3/
 │       └── Extensions.cs               # Common service extensions
 ├── docs/
 │   ├── images/                         # Documentation assets
-│   └── AWS-DEPLOYMENT.md               # Complete AWS deployment guide
+│   ├── AWS-DEPLOYMENT.md               # Complete AWS deployment guide (all strategies)
+│   └── DEPLOYMENT-GUIDE.md             # Quick deployment guide (step-by-step)
 ├── .github/
 │   └── workflows/                      # CI/CD pipelines (empty)
 ├── Directory.Build.props               # Build configuration
@@ -357,36 +358,67 @@ After deletion, restart the Aspire AppHost and the stack will be recreated autom
 
 ## 🚀 Production Deployment
 
-Ready to deploy your .NET Aspire application to AWS? We've prepared a comprehensive deployment guide covering multiple strategies:
+Ready to deploy your .NET Aspire application to AWS? We've prepared comprehensive deployment guides for different needs:
 
-### **� [Complete AWS Deployment Guide](docs/AWS-DEPLOYMENT.md)**
+### **📋 [Quick Deployment Guide](docs/DEPLOYMENT-GUIDE.md) - START HERE**
 
-The deployment guide covers:
+**Perfect for getting started quickly!** Step-by-step instructions with one-command deployment:
+
+```bash
+# One command to deploy everything to AWS ECS
+./scripts/deploy-to-aws.sh aspire-prod us-east-1
+```
+
+**What's included:**
+
+- ✅ **Prerequisites checklist** and verification steps
+- ✅ **One-command deployment** script for instant setup
+- ✅ **Manual step-by-step guide** for learning each phase
+- ✅ **Post-deployment verification** and testing
+- ✅ **Monitoring and management** commands
+- ✅ **Troubleshooting guide** for common issues
+- ✅ **Complete cleanup** instructions
+
+### **🏗️ [Complete AWS Deployment Guide](docs/AWS-DEPLOYMENT.md)**
+
+**For comprehensive AWS deployment strategies** covering multiple options:
 
 - **🐳 AWS ECS (Recommended)** - Container-based deployment with Fargate
 - **🌐 Elastic Beanstalk** - Simple web app deployment
 - **☁️ AWS Lambda** - Serverless functions for APIs
 - **⚡ Kubernetes (EKS)** - Enterprise-grade container orchestration
 
-### **Quick Deployment Options**
+### **🎯 Deployment Comparison**
 
-| Strategy              | Complexity | Best For             | Guide Link                                                                |
-| --------------------- | ---------- | -------------------- | ------------------------------------------------------------------------- |
-| **ECS Fargate**       | Medium     | Production workloads | [ECS Guide](docs/AWS-DEPLOYMENT.md#-option-1-aws-ecs-recommended)         |
-| **Elastic Beanstalk** | Low        | Simple web apps      | [Beanstalk Guide](docs/AWS-DEPLOYMENT.md#-option-2-aws-elastic-beanstalk) |
-| **Lambda**            | Medium     | Event-driven APIs    | [Lambda Guide](docs/AWS-DEPLOYMENT.md#️-option-3-aws-lambda-serverless)   |
+| Guide                                        | Best For                     | Time to Deploy | Features                                          |
+| -------------------------------------------- | ---------------------------- | -------------- | ------------------------------------------------- |
+| **[Quick Guide](docs/DEPLOYMENT-GUIDE.md)**  | Getting started, POCs        | ~20-30 minutes | One-command deployment, health checks, monitoring |
+| **[Complete Guide](docs/AWS-DEPLOYMENT.md)** | Production systems, learning | ~30-60 minutes | Multiple strategies, CI/CD, advanced features     |
 
-### **🎯 What's Included in the Deployment Guide**
+### **🚀 Quick Start**
 
-- ✅ **Dockerfiles** for containerization
-- ✅ **CloudFormation templates** for infrastructure
-- ✅ **CI/CD pipelines** with GitHub Actions
-- ✅ **Security best practices** and IAM configurations
-- ✅ **Monitoring setup** with CloudWatch and X-Ray
-- ✅ **Production configuration** examples
-- ✅ **Troubleshooting guide** for common issues
+```bash
+# 1. Make deployment script executable
+chmod +x scripts/deploy-to-aws.sh
 
-📋 **[View Complete Deployment Guide →](docs/AWS-DEPLOYMENT.md)**
+# 2. Deploy to AWS (creates everything!)
+./scripts/deploy-to-aws.sh aspire-prod us-east-1
+
+# 3. Wait 20-30 minutes, then visit your application URL!
+```
+
+### **What You'll Get After Deployment**
+
+- 🌐 **Blazor Web Application** - Complete image upload interface
+- 🔗 **RESTful API** - Image upload and management endpoints
+- 📦 **S3 Storage** - Configured bucket with public read access
+- 📈 **Auto Scaling** - 2-10 instances based on CPU utilization
+- 🔍 **Health Monitoring** - CloudWatch Container Insights
+- 🔒 **Production Security** - VPC, security groups, IAM roles
+
+📋 **[Start with Quick Deployment Guide →](docs/DEPLOYMENT-GUIDE.md)**
+
+� **[View Complete AWS Deployment Options →](docs/AWS-DEPLOYMENT.md)**
 
 ## 🤝 Contributing
 

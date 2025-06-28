@@ -227,6 +227,10 @@ dn9-aspire-cloudformation-s3/
 │   ├── images/                         # Documentation assets
 │   ├── AWS-DEPLOYMENT.md               # Complete AWS deployment guide (all strategies)
 │   └── DEPLOYMENT-GUIDE.md             # Quick deployment guide (step-by-step)
+├── scripts/
+│   ├── deploy-to-aws.sh                # Bash deployment script (Linux/macOS)
+│   ├── deploy-to-aws.ps1               # PowerShell deployment script (Windows)
+│   └── manage-deployment.ps1           # PowerShell management helper
 ├── .github/
 │   └── workflows/                      # CI/CD pipelines (empty)
 ├── Directory.Build.props               # Build configuration
@@ -364,17 +368,28 @@ Ready to deploy your .NET Aspire application to AWS? We've prepared comprehensiv
 
 **Perfect for getting started quickly!** Step-by-step instructions with one-command deployment:
 
+**Bash (Linux/macOS):**
+
 ```bash
 # One command to deploy everything to AWS ECS
 ./scripts/deploy-to-aws.sh aspire-prod us-east-1
 ```
 
+**PowerShell (Windows):**
+
+```powershell
+# Native PowerShell deployment with advanced parameters
+.\scripts\deploy-to-aws.ps1 -EnvironmentName "aspire-prod" -AwsRegion "us-east-1"
+```
+
 **What's included:**
 
+- ✅ **Cross-platform support** - Bash and PowerShell scripts
 - ✅ **Prerequisites checklist** and verification steps
 - ✅ **One-command deployment** script for instant setup
 - ✅ **Manual step-by-step guide** for learning each phase
 - ✅ **Post-deployment verification** and testing
+- ✅ **PowerShell management tools** for scaling, monitoring, and cleanup
 - ✅ **Monitoring and management** commands
 - ✅ **Troubleshooting guide** for common issues
 - ✅ **Complete cleanup** instructions

@@ -13,6 +13,8 @@ Before you begin, ensure you have:
 
 ### **Verify Prerequisites**
 
+**Bash/Linux/macOS:**
+
 ```bash
 # Check AWS CLI configuration
 aws configure list
@@ -27,17 +29,50 @@ ls -la src/AspireAwsStack.AppHost/infrastructure/ecs-complete-stack.yaml
 ls -la scripts/deploy-to-aws.sh
 ```
 
+**PowerShell/Windows:**
+
+```powershell
+# Check AWS CLI configuration
+aws configure list
+aws sts get-caller-identity
+
+# Check Docker
+docker --version
+docker info
+
+# Verify project structure
+Get-ChildItem -Path "src/AspireAwsStack.AppHost/infrastructure/ecs-complete-stack.yaml"
+Get-ChildItem -Path "scripts/deploy-to-aws.sh"
+```
+
 ---
 
 ## 🚀 Option 1: One-Command Deployment (Recommended)
 
-### **Step 1: Make Script Executable**
+### **Step 1: Choose Your Deployment Script**
+
+We provide both Bash and PowerShell deployment scripts for your convenience:
+
+- **`scripts/deploy-to-aws.sh`** - Bash script (Linux/macOS/WSL)
+- **`scripts/deploy-to-aws.ps1`** - PowerShell script (Windows/Cross-platform)
+
+**Bash/Linux/macOS:**
 
 ```bash
 chmod +x scripts/deploy-to-aws.sh
 ```
 
+**PowerShell/Windows:**
+
+```powershell
+# No setup required - PowerShell script is ready to run
+# Ensure ExecutionPolicy allows script execution:
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
 ### **Step 2: Deploy Everything**
+
+**Bash/Linux/macOS:**
 
 ```bash
 # Deploy to production environment
@@ -47,12 +82,41 @@ chmod +x scripts/deploy-to-aws.sh
 ./scripts/deploy-to-aws.sh aspire-staging us-west-2
 ```
 
+**PowerShell/Windows (Recommended):**
+
+```powershell
+# Deploy to production environment
+.\scripts\deploy-to-aws.ps1 -EnvironmentName "aspire-prod" -AwsRegion "us-east-1"
+
+# Or deploy to staging environment
+.\scripts\deploy-to-aws.ps1 -EnvironmentName "aspire-staging" -AwsRegion "us-west-2"
+
+# With custom scaling parameters
+.\scripts\deploy-to-aws.ps1 -EnvironmentName "aspire-prod" -AwsRegion "us-east-1" -MinCapacity 1 -MaxCapacity 5
+
+# Alternative: Run bash script from PowerShell (requires Git Bash or WSL)
+bash scripts/deploy-to-aws.sh aspire-prod us-east-1
+```
+
 ### **Script Parameters**
+
+**Bash Script (`deploy-to-aws.sh`):**
 
 | Parameter        | Description                  | Default       | Example          |
 | ---------------- | ---------------------------- | ------------- | ---------------- |
 | Environment Name | Prefix for all AWS resources | `aspire-prod` | `aspire-staging` |
 | AWS Region       | Target AWS region            | `us-east-1`   | `us-west-2`      |
+
+**PowerShell Script (`deploy-to-aws.ps1`):**
+
+| Parameter          | Description                  | Default       | Example          |
+| ------------------ | ---------------------------- | ------------- | ---------------- |
+| `-EnvironmentName` | Prefix for all AWS resources | `aspire-prod` | `aspire-staging` |
+| `-AwsRegion`       | Target AWS region            | `us-east-1`   | `us-west-2`      |
+| `-MinCapacity`     | Minimum number of ECS tasks  | `2`           | `1`              |
+| `-MaxCapacity`     | Maximum number of ECS tasks  | `10`          | `5`              |
+| `-TaskCpu`         | CPU units for ECS tasks      | `512`         | `256`            |
+| `-TaskMemory`      | Memory (MB) for ECS tasks    | `1024`        | `512`            |
 
 ### **What the Script Does**
 
@@ -66,9 +130,11 @@ chmod +x scripts/deploy-to-aws.sh
 
 ## 🔧 Option 2: Manual Step-by-Step Deployment
 
-If you prefer more control over each step:
+If you prefer more control over each step, follow these manual commands:
 
 ### **Step 1: Set Environment Variables**
+
+**Bash/Linux/macOS:**
 
 ```bash
 export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -83,7 +149,25 @@ echo "  Environment: $ENVIRONMENT_NAME"
 echo "  S3 Bucket: $S3_BUCKET_NAME"
 ```
 
+**PowerShell/Windows:**
+
+```powershell
+$AWS_ACCOUNT_ID = aws sts get-caller-identity --query Account --output text
+$AWS_REGION = "us-east-1"
+$ENVIRONMENT_NAME = "aspire-prod"
+$Timestamp = [int][double]::Parse((Get-Date -UFormat %s))
+$S3_BUCKET_NAME = "aspire-aws-images-$ENVIRONMENT_NAME-$Timestamp"
+
+Write-Host "Deploying to:" -ForegroundColor Green
+Write-Host "  Account: $AWS_ACCOUNT_ID" -ForegroundColor Cyan
+Write-Host "  Region: $AWS_REGION" -ForegroundColor Cyan
+Write-Host "  Environment: $ENVIRONMENT_NAME" -ForegroundColor Cyan
+Write-Host "  S3 Bucket: $S3_BUCKET_NAME" -ForegroundColor Cyan
+```
+
 ### **Step 2: Create ECR Repositories**
+
+**Bash/Linux/macOS:**
 
 ```bash
 # Create repositories for container images
@@ -94,7 +178,20 @@ aws ecr create-repository --repository-name aspire-web --region $AWS_REGION
 aws ecr describe-repositories --region $AWS_REGION --query 'repositories[].repositoryName'
 ```
 
+**PowerShell/Windows:**
+
+```powershell
+# Create repositories for container images
+aws ecr create-repository --repository-name aspire-api --region $AWS_REGION
+aws ecr create-repository --repository-name aspire-web --region $AWS_REGION
+
+# Verify repositories were created
+aws ecr describe-repositories --region $AWS_REGION --query 'repositories[].repositoryName'
+```
+
 ### **Step 3: Build and Push Docker Images**
+
+**Bash/Linux/macOS:**
 
 ```bash
 # Login to ECR
@@ -121,7 +218,40 @@ docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/aspire-web:latest
 echo "✅ Images pushed successfully!"
 ```
 
+**PowerShell/Windows:**
+
+```powershell
+# Login to ECR
+$loginCommand = "aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+Invoke-Expression $loginCommand
+
+# Build Docker images
+Write-Host "Building API service image..." -ForegroundColor Yellow
+docker build -f src/AspireAwsStack.ApiService/Dockerfile -t aspire-api .
+
+Write-Host "Building Web service image..." -ForegroundColor Yellow
+docker build -f src/AspireAwsStack.Web/Dockerfile -t aspire-web .
+
+# Tag images for ECR
+$ApiImageUri = "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/aspire-api:latest"
+$WebImageUri = "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/aspire-web:latest"
+
+docker tag aspire-api:latest $ApiImageUri
+docker tag aspire-web:latest $WebImageUri
+
+# Push images to ECR
+Write-Host "Pushing API service image..." -ForegroundColor Yellow
+docker push $ApiImageUri
+
+Write-Host "Pushing Web service image..." -ForegroundColor Yellow
+docker push $WebImageUri
+
+Write-Host "✅ Images pushed successfully!" -ForegroundColor Green
+```
+
 ### **Step 4: Deploy CloudFormation Stack**
+
+**Bash/Linux/macOS:**
 
 ```bash
 # Deploy the complete infrastructure
@@ -139,11 +269,35 @@ aws cloudformation deploy \
     TaskMemory=1024 \
   --capabilities CAPABILITY_NAMED_IAM \
   --region ${AWS_REGION}
+```
 
-echo "✅ CloudFormation deployment initiated!"
+**PowerShell/Windows:**
+
+```powershell
+# Deploy the complete infrastructure
+$deployCommand = @"
+aws cloudformation deploy ``
+  --template-file src/AspireAwsStack.AppHost/infrastructure/ecs-complete-stack.yaml ``
+  --stack-name $ENVIRONMENT_NAME-ecs-stack ``
+  --parameter-overrides ``
+    EnvironmentName=$ENVIRONMENT_NAME ``
+    ApiImageUri=$ApiImageUri ``
+    WebImageUri=$WebImageUri ``
+    S3BucketName=$S3_BUCKET_NAME ``
+    MinCapacity=2 ``
+    MaxCapacity=10 ``
+    TaskCpu=512 ``
+    TaskMemory=1024 ``
+  --capabilities CAPABILITY_NAMED_IAM ``
+  --region $AWS_REGION
+"@
+
+Invoke-Expression $deployCommand
 ```
 
 ### **Step 5: Get Deployment Outputs**
+
+**Bash/Linux/macOS:**
 
 ```bash
 # Wait for deployment to complete, then get outputs
@@ -168,10 +322,41 @@ S3_URL=$(aws cloudformation describe-stacks \
   --region ${AWS_REGION})
 
 echo ""
-echo "🎉 Deployment completed successfully!"
+echo "🎉 Deployment successful!"
 echo "🌐 Application URL: $LOAD_BALANCER_URL"
 echo "🔗 API URL: $API_URL"
 echo "📦 S3 Bucket: $S3_URL"
+```
+
+**PowerShell/Windows:**
+
+```powershell
+# Wait for deployment to complete, then get outputs
+Write-Host "Getting deployment outputs..." -ForegroundColor Yellow
+
+$LOAD_BALANCER_URL = aws cloudformation describe-stacks `
+  --stack-name "$ENVIRONMENT_NAME-ecs-stack" `
+  --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerUrl`].OutputValue' `
+  --output text `
+  --region $AWS_REGION
+
+$API_URL = aws cloudformation describe-stacks `
+  --stack-name "$ENVIRONMENT_NAME-ecs-stack" `
+  --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' `
+  --output text `
+  --region $AWS_REGION
+
+$S3_URL = aws cloudformation describe-stacks `
+  --stack-name "$ENVIRONMENT_NAME-ecs-stack" `
+  --query 'Stacks[0].Outputs[?OutputKey==`S3BucketUrl`].OutputValue' `
+  --output text `
+  --region $AWS_REGION
+
+Write-Host ""
+Write-Host "🎉 Deployment successful!" -ForegroundColor Green
+Write-Host "🌐 Application URL: $LOAD_BALANCER_URL" -ForegroundColor Cyan
+Write-Host "🔗 API URL: $API_URL" -ForegroundColor Cyan
+Write-Host "📦 S3 Bucket: $S3_URL" -ForegroundColor Cyan
 ```
 
 ---
@@ -179,6 +364,8 @@ echo "📦 S3 Bucket: $S3_URL"
 ## 🔍 Post-Deployment Verification
 
 ### **1. Check Application Health**
+
+**Bash/Linux/macOS:**
 
 ```bash
 # Wait for services to start (5-10 minutes)
@@ -193,7 +380,35 @@ curl -f $API_URL/health || echo "❌ API service health check failed"
 echo "✅ Health checks completed"
 ```
 
+**PowerShell/Windows:**
+
+```powershell
+# Wait for services to start (5-10 minutes)
+Write-Host "Waiting for services to start..." -ForegroundColor Yellow
+Start-Sleep -Seconds 300
+
+# Test health endpoints
+Write-Host "Testing health endpoints..." -ForegroundColor Yellow
+try {
+    $webHealth = Invoke-RestMethod -Uri "$LOAD_BALANCER_URL/health" -Method Get
+    Write-Host "✅ Web service health check passed" -ForegroundColor Green
+} catch {
+    Write-Host "❌ Web service health check failed" -ForegroundColor Red
+}
+
+try {
+    $apiHealth = Invoke-RestMethod -Uri "$API_URL/health" -Method Get
+    Write-Host "✅ API service health check passed" -ForegroundColor Green
+} catch {
+    Write-Host "❌ API service health check failed" -ForegroundColor Red
+}
+
+Write-Host "✅ Health checks completed" -ForegroundColor Green
+```
+
 ### **2. Test Image Upload Functionality**
+
+**Bash/Linux/macOS:**
 
 ```bash
 # Create a test image file
@@ -207,7 +422,30 @@ curl -X POST -F "file=@test-image.jpg" $API_URL/images/upload
 echo "✅ Image upload test completed"
 ```
 
+**PowerShell/Windows:**
+
+```powershell
+# Create a test image file
+Write-Host "Creating test image..." -ForegroundColor Yellow
+Invoke-WebRequest -Uri "https://via.placeholder.com/300x200/09f/fff.png" -OutFile "test-image.jpg"
+
+# Test image upload
+Write-Host "Testing image upload..." -ForegroundColor Yellow
+try {
+    $form = @{
+        file = Get-Item -Path "test-image.jpg"
+    }
+    $response = Invoke-RestMethod -Uri "$API_URL/images/upload" -Method Post -Form $form
+    Write-Host "✅ Image upload test completed" -ForegroundColor Green
+    Write-Host "Response: $($response | ConvertTo-Json)" -ForegroundColor Cyan
+} catch {
+    Write-Host "❌ Image upload test failed: $($_.Exception.Message)" -ForegroundColor Red
+}
+```
+
 ### **3. Monitor ECS Services**
+
+**Bash/Linux/macOS:**
 
 ```bash
 # Check ECS service status
@@ -218,7 +456,20 @@ aws ecs describe-services \
   --output table
 ```
 
+**PowerShell/Windows:**
+
+```powershell
+# Check ECS service status
+aws ecs describe-services `
+  --cluster "$ENVIRONMENT_NAME-cluster" `
+  --services "$ENVIRONMENT_NAME-api-service" "$ENVIRONMENT_NAME-web-service" `
+  --query 'services[].{Name:serviceName,Status:status,Running:runningCount,Desired:desiredCount}' `
+  --output table
+```
+
 ### **4. View CloudWatch Logs**
+
+**Bash/Linux/macOS:**
 
 ```bash
 # List recent log streams
@@ -226,16 +477,34 @@ aws logs describe-log-streams \
   --log-group-name /ecs/${ENVIRONMENT_NAME} \
   --order-by LastEventTime \
   --descending \
-  --max-items 10 \
-  --query 'logStreams[].{Name:logStreamName,LastEvent:lastEventTime}' \
-  --output table
+  --max-items 5 \
+  --query 'logStreams[].logStreamName'
 
-# View recent API logs
-aws logs get-log-events \
+# View recent logs
+aws logs filter-log-events \
   --log-group-name /ecs/${ENVIRONMENT_NAME} \
-  --log-stream-name "api/api-service/$(aws logs describe-log-streams --log-group-name /ecs/${ENVIRONMENT_NAME} --query 'logStreams[?contains(logStreamName, `api`)].logStreamName' --output text | head -1)" \
-  --limit 20 \
+  --start-time $(date -d '1 hour ago' +%s)000 \
   --query 'events[].message' \
+  --output text
+```
+
+**PowerShell/Windows:**
+
+```powershell
+# List recent log streams
+aws logs describe-log-streams `
+  --log-group-name "/ecs/$ENVIRONMENT_NAME" `
+  --order-by LastEventTime `
+  --descending `
+  --max-items 5 `
+  --query 'logStreams[].logStreamName'
+
+# View recent logs (last hour)
+$oneHourAgo = [int][double]::Parse((Get-Date).AddHours(-1).ToString("yyyyMMddHHmmss"))
+aws logs filter-log-events `
+  --log-group-name "/ecs/$ENVIRONMENT_NAME" `
+  --start-time "${oneHourAgo}000" `
+  --query 'events[].message' `
   --output text
 ```
 
@@ -247,12 +516,14 @@ aws logs get-log-events \
 
 After deployment, you can monitor your application through:
 
-1. **ECS Console**: `https://console.aws.amazon.com/ecs/home?region=${AWS_REGION}#/clusters/${ENVIRONMENT_NAME}-cluster`
-2. **CloudFormation Console**: `https://console.aws.amazon.com/cloudformation/home?region=${AWS_REGION}#/stacks/stackinfo?stackId=${ENVIRONMENT_NAME}-ecs-stack`
-3. **CloudWatch Console**: `https://console.aws.amazon.com/cloudwatch/home?region=${AWS_REGION}#logsV2:log-groups/log-group/%2Fecs%2F${ENVIRONMENT_NAME}`
-4. **S3 Console**: `https://console.aws.amazon.com/s3/buckets/${S3_BUCKET_NAME}`
+1. **ECS Console**: Navigate to the ECS service in your AWS region to monitor cluster health
+2. **CloudFormation Console**: View stack status and outputs
+3. **CloudWatch Console**: Access application logs and metrics
+4. **S3 Console**: Monitor bucket usage and uploaded images
 
-### **Useful Commands**
+### **Useful Management Commands**
+
+**Bash/Linux/macOS:**
 
 ```bash
 # Scale services up or down
@@ -271,6 +542,27 @@ aws ecs update-service \
 aws application-autoscaling describe-scaling-activities \
   --service-namespace ecs \
   --resource-id service/${ENVIRONMENT_NAME}-cluster/${ENVIRONMENT_NAME}-api-service
+```
+
+**PowerShell/Windows:**
+
+```powershell
+# Scale services up or down
+aws ecs update-service `
+  --cluster "$ENVIRONMENT_NAME-cluster" `
+  --service "$ENVIRONMENT_NAME-api-service" `
+  --desired-count 4
+
+# Force new deployment (useful for updates)
+aws ecs update-service `
+  --cluster "$ENVIRONMENT_NAME-cluster" `
+  --service "$ENVIRONMENT_NAME-api-service" `
+  --force-new-deployment
+
+# View auto scaling activity
+aws application-autoscaling describe-scaling-activities `
+  --service-namespace ecs `
+  --resource-id "service/$ENVIRONMENT_NAME-cluster/$ENVIRONMENT_NAME-api-service"
 ```
 
 ---

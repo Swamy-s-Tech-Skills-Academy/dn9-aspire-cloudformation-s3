@@ -1047,13 +1047,80 @@ jobs:
 - **Cold start performance**: Consider provisioned concurrency for critical endpoints
 - **Memory/timeout configuration**: Adjust based on application requirements
 
-## 🔗 Additional Resources
+## ✅ **Production-Ready Enhancements Summary**
 
-- [AWS ECS Documentation](https://docs.aws.amazon.com/ecs/)
-- [Elastic Beanstalk .NET Guide](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/dotnet-core-tutorial.html)
-- [AWS Lambda .NET Guide](https://docs.aws.amazon.com/lambda/latest/dg/lambda-csharp.html)
-- [.NET Aspire Documentation](https://learn.microsoft.com/en-us/dotnet/aspire/)
-- [AWS CloudFormation Templates](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/)
+Based on your excellent review, I've implemented a complete, production-ready ECS deployment with all the critical missing pieces:
+
+### **🔧 Fixed Architecture Issues**
+
+1. **✅ Separate ECS Services**: Created individual task definitions and services for API and Web instead of running both containers in one task
+2. **✅ Complete CloudFormation Template**: Full template with all networking, security, and monitoring resources
+3. **✅ Health Check Endpoints**: Added `/health` endpoints to both API and Web services
+4. **✅ Application Load Balancer**: Properly configured ALB with target groups and routing rules
+5. **✅ Auto Scaling**: CPU-based auto scaling for both services (2-10 instances)
+6. **✅ High Availability**: Dual NAT Gateways, multi-AZ deployment, circuit breaker deployment
+
+### **🚀 Enhanced Dockerfiles**
+
+**Improvements Made:**
+
+- ✅ **Layer Caching Optimization**: Copy `.csproj` files first, then `RUN dotnet restore`, then copy source
+- ✅ **Health Check Integration**: Added `curl` installation and `HEALTHCHECK` directives
+- ✅ **Production Readiness**: Based on `dotnet:9.0` runtime with proper multi-stage builds
+
+### **🏗️ Complete Infrastructure as Code**
+
+**New CloudFormation Features:**
+
+- ✅ **Full VPC Setup**: Public/private subnets across 2 AZs with proper routing
+- ✅ **Security Groups**: Least-privilege access with ALB → ECS communication only
+- ✅ **IAM Roles**: Separate execution and task roles with minimal required permissions
+- ✅ **S3 Integration**: Bucket with proper policies, CORS, and lifecycle rules
+- ✅ **CloudWatch**: Container Insights, custom alarms, structured logging
+- ✅ **Auto Scaling**: Target tracking scaling policies with cooldown periods
+- ✅ **Production Monitoring**: CPU alarms, health checks, and deployment circuit breakers
+
+### **🎯 Key Production Benefits**
+
+1. **Scalability**: Services scale independently based on CPU utilization
+2. **Reliability**: Circuit breaker deployments prevent bad deployments
+3. **Security**: Private subnets, security groups, IAM roles with least privilege
+4. **Observability**: CloudWatch Container Insights, structured logging, custom metrics
+5. **Cost Optimization**: Uses FARGATE_SPOT capacity providers when available
+6. **High Availability**: Multi-AZ deployment with ALB health checks
+
+### **🚀 One-Command Deployment**
+
+The provided deployment script (`scripts/deploy-to-aws.sh`) handles the complete end-to-end deployment:
+
+```bash
+./scripts/deploy-to-aws.sh aspire-prod us-east-1
+```
+
+**What it does:**
+
+1. Creates ECR repositories
+2. Builds and pushes Docker images
+3. Deploys complete CloudFormation stack
+4. Outputs application URLs and endpoints
+
+### **🔍 Validation & Testing**
+
+**Health Check Endpoints:**
+
+- API Health: `http://your-alb-dns/api/health`
+- Web Health: `http://your-alb-dns/health`
+
+**Load Balancer Routing:**
+
+- Web App: `http://your-alb-dns/` (default route)
+- API Endpoints: `http://your-alb-dns/api/*` (path-based routing)
+
+**Monitoring:**
+
+- CloudWatch Container Insights: Real-time metrics and logs
+- Auto Scaling Activity: View scaling events in AWS Console
+- Target Group Health: Monitor service health in ALB console
 
 ---
 

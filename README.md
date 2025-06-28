@@ -209,24 +209,48 @@ dn9-aspire-cloudformation-s3/
 
 ### **Common Issues**
 
-#### 1. **CloudFormation Stack Update Failures**
+#### 1. **CloudFormation "Policy has invalid resource" Error**
+
+If you see an error like `Policy has invalid resource (Service: S3, Status Code: 400)` during CloudFormation stack creation, this indicates an issue with the S3 bucket policy ARN format:
+
+```plaintext
+S3BucketPolicy CREATE_FAILED
+Resource handler returned message: "Policy has invalid resource (Service: S3, Status Code: 400)"
+```
+
+**Solution**: The CloudFormation template has been fixed to use the correct ARN format. If you encounter this error:
+
+1. Delete the failed stack:
+
+   ```bash
+   aws cloudformation delete-stack --stack-name AspireAwsStackResources
+   ```
+
+2. Wait for deletion and restart the Aspire AppHost:
+
+   ```bash
+   aws cloudformation wait stack-delete-complete --stack-name AspireAwsStackResources
+   dotnet run --project src/AspireAwsStack.AppHost
+   ```
+
+#### 2. **CloudFormation Stack Update Failures**
 
 If you encounter errors when updating the CloudFormation stack (e.g., after manually deleting the S3 bucket), you may need to delete and recreate the stack:
 
 ```bash
 # Delete the existing CloudFormation stack
-aws cloudformation delete-stack --stack-name AspireAwsStack-resources
+aws cloudformation delete-stack --stack-name AspireAwsStackResources
 
 # Wait for deletion to complete (this may take a few minutes)
-aws cloudformation wait stack-delete-complete --stack-name AspireAwsStack-resources
+aws cloudformation wait stack-delete-complete --stack-name AspireAwsStackResources
 
 # Verify the stack is deleted
-aws cloudformation describe-stacks --stack-name AspireAwsStack-resources
+aws cloudformation describe-stacks --stack-name AspireAwsStackResources
 ```
 
 After deletion, restart the Aspire AppHost and the stack will be recreated automatically.
 
-#### 2. **AWS Credentials Issues**
+#### 3. **AWS Credentials Issues**
 
 - Ensure AWS CLI is configured: `aws configure list`
 - Verify credentials have S3 and CloudFormation permissions

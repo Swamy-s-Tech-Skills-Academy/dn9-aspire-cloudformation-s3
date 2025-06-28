@@ -51,7 +51,7 @@
               "Principal": "*",
               "Action": "s3:GetObject",
               "Resource": {
-                "Fn::Sub": "${S3ImageBucket}/*"
+                "Fn::Sub": "arn:aws:s3:::${S3ImageBucket}/*"
               }
             }
           ]

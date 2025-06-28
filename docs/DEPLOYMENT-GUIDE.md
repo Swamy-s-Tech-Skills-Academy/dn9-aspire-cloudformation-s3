@@ -604,11 +604,39 @@ aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --
 
 **CloudFormation Fails:**
 
+**Bash/Linux/macOS:**
+
 ```bash
-# Check stack events
+# Check stack events for failures
 aws cloudformation describe-stack-events \
   --stack-name ${ENVIRONMENT_NAME}-ecs-stack \
+  --region ${AWS_REGION} \
+  --query 'StackEvents[?ResourceStatus==`CREATE_FAILED` || ResourceStatus==`UPDATE_FAILED`].{Time:Timestamp,Resource:LogicalResourceId,Status:ResourceStatus,Reason:ResourceStatusReason}' \
+  --output table
+
+# Get all recent events
+aws cloudformation describe-stack-events \
+  --stack-name ${ENVIRONMENT_NAME}-ecs-stack \
+  --region ${AWS_REGION} \
   --query 'StackEvents[0:10].{Time:Timestamp,Status:ResourceStatus,Reason:ResourceStatusReason}' \
+  --output table
+```
+
+**PowerShell/Windows:**
+
+```powershell
+# Check stack events for failures
+aws cloudformation describe-stack-events `
+  --stack-name "$ENVIRONMENT_NAME-ecs-stack" `
+  --region $AWS_REGION `
+  --query 'StackEvents[?ResourceStatus==`CREATE_FAILED` || ResourceStatus==`UPDATE_FAILED`].{Time:Timestamp,Resource:LogicalResourceId,Status:ResourceStatus,Reason:ResourceStatusReason}' `
+  --output table
+
+# Get all recent events
+aws cloudformation describe-stack-events `
+  --stack-name "$ENVIRONMENT_NAME-ecs-stack" `
+  --region $AWS_REGION `
+  --query 'StackEvents[0:10].{Time:Timestamp,Status:ResourceStatus,Reason:ResourceStatusReason}' `
   --output table
 ```
 

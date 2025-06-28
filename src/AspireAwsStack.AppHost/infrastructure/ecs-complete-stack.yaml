@@ -705,7 +705,7 @@ Resources:
         DeploymentCircuitBreaker:
           Enable: true
           Rollback: true
-      ServiceTags:
+      Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-api-service
         - Key: Environment
@@ -738,7 +738,7 @@ Resources:
         DeploymentCircuitBreaker:
           Enable: true
           Rollback: true
-      ServiceTags:
+      Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-web-service
         - Key: Environment

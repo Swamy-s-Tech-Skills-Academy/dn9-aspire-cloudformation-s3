@@ -1,0 +1,20 @@
+<Project>
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Common -->
+		<PackageVersion Include="SonarAnalyzer.CSharp" Version="10.12.0.118525" />
+		<!-- GameStore.Api -->
+		<PackageVersion Include="MinimalApis.Extensions" Version="0.11.0" />
+		<PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6" />
+		<PackageVersion Include="Scalar.AspNetCore" Version="2.5.3" />
+		<!-- Testing Projects -->
+		<PackageVersion Include="Microsoft.Azure.Functions.Worker" Version="2.0.0" />
+		<PackageVersion Include="coverlet.collector" Version="6.0.4" />
+		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+		<PackageVersion Include="xunit" Version="2.9.3" />
+		<PackageVersion Include="xunit.runner.visualstudio" Version="3.1.1" />
+	</ItemGroup>
+</Project>

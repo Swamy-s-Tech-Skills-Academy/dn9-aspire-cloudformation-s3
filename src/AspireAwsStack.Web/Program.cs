@@ -13,6 +13,10 @@ builder.AddRedisOutputCache("cache");
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Add health checks for production deployments
+builder.Services.AddHealthChecks()
+    .AddCheck("web-app", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Web application is running"));
+
 builder.Services.AddHttpClient<WeatherApiClient>(client =>
     {
         // This URL uses "https+http://" to indicate HTTPS is preferred over HTTP.
@@ -40,6 +44,9 @@ app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 app.UseOutputCache();
+
+// Health check endpoint for container health checks
+app.MapHealthChecks("/health");
 
 app.MapStaticAssets();
 

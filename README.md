@@ -226,7 +226,8 @@ dn9-aspire-cloudformation-s3/
 ├── docs/
 │   ├── images/                         # Documentation assets
 │   ├── AWS-DEPLOYMENT.md               # Complete AWS deployment guide (all strategies)
-│   └── DEPLOYMENT-GUIDE.md             # Quick deployment guide (step-by-step)
+│   ├── DEPLOYMENT-GUIDE.md             # Quick deployment guide (step-by-step)
+│   └── POWERSHELL-QUICKSTART.md        # PowerShell-specific quick start for Windows
 ├── scripts/
 │   ├── deploy-to-aws.sh                # Bash deployment script (Linux/macOS)
 │   ├── deploy-to-aws.ps1               # PowerShell deployment script (Windows)
@@ -393,6 +394,8 @@ Ready to deploy your .NET Aspire application to AWS? We've prepared comprehensiv
 - ✅ **Monitoring and management** commands
 - ✅ **Troubleshooting guide** for common issues
 - ✅ **Complete cleanup** instructions
+
+**🖥️ Windows Users:** Check out our [PowerShell Quick Start Guide](docs/POWERSHELL-QUICKSTART.md) for a Windows-focused experience!
 
 ### **🏗️ [Complete AWS Deployment Guide](docs/AWS-DEPLOYMENT.md)**
 

@@ -111,40 +111,40 @@ Write-ColorOutput "S3 Bucket: $S3BucketName" "Cyan"
 # Step 1: Create ECR repositories if they don't exist
 Write-ColorOutput "📦 Creating ECR repositories..." "Yellow"
 
-# Check and create aspire-api repository
-try {
-    aws ecr describe-repositories --repository-names aspire-api --region $AwsRegion 2>$null
+# Function to ensure ECR repository exists
+function Test-AndCreateEcrRepository {
+    param([string]$RepositoryName)
+    
+    Write-ColorOutput "Checking repository: $RepositoryName" "Gray"
+    
+    # Check if repository exists
+    aws ecr describe-repositories --repository-names $RepositoryName --region $AwsRegion 2>&1 | Out-Null
+    
     if ($LASTEXITCODE -eq 0) {
-        Write-ColorOutput "✅ aspire-api repository already exists" "Green"
+        Write-ColorOutput "✅ $RepositoryName repository already exists" "Green"
+        return $true
     }
-}
-catch {
-    Write-ColorOutput "Creating aspire-api repository..." "Yellow"
-    aws ecr create-repository --repository-name aspire-api --region $AwsRegion
+    
+    # Repository doesn't exist, create it
+    Write-ColorOutput "Creating $RepositoryName repository..." "Yellow"
+    aws ecr create-repository --repository-name $RepositoryName --region $AwsRegion
+    
     if ($LASTEXITCODE -eq 0) {
-        Write-ColorOutput "✅ aspire-api repository created" "Green"
-    }
-    else {
-        throw "Failed to create aspire-api repository"
+        Write-ColorOutput "✅ $RepositoryName repository created successfully" "Green"
+        return $true
+    } else {
+        Write-ColorOutput "❌ Failed to create $RepositoryName repository" "Red"
+        return $false
     }
 }
 
-# Check and create aspire-web repository
-try {
-    aws ecr describe-repositories --repository-names aspire-web --region $AwsRegion 2>$null
-    if ($LASTEXITCODE -eq 0) {
-        Write-ColorOutput "✅ aspire-web repository already exists" "Green"
-    }
+# Ensure both repositories exist
+if (-not (Test-AndCreateEcrRepository "aspire-api")) {
+    throw "Failed to create or verify aspire-api repository"
 }
-catch {
-    Write-ColorOutput "Creating aspire-web repository..." "Yellow"
-    aws ecr create-repository --repository-name aspire-web --region $AwsRegion
-    if ($LASTEXITCODE -eq 0) {
-        Write-ColorOutput "✅ aspire-web repository created" "Green"
-    }
-    else {
-        throw "Failed to create aspire-web repository"
-    }
+
+if (-not (Test-AndCreateEcrRepository "aspire-web")) {
+    throw "Failed to create or verify aspire-web repository"
 }
 
 # Step 2: Build and push Docker images
@@ -178,13 +178,24 @@ $WebImageUri = "$AwsAccountId.dkr.ecr.$AwsRegion.amazonaws.com/aspire-web:latest
 docker tag aspire-api:latest $ApiImageUri
 docker tag aspire-web:latest $WebImageUri
 
+# Verify repositories exist before pushing
+Write-ColorOutput "Verifying ECR repositories before push..." "Yellow"
+aws ecr describe-repositories --repository-names aspire-api aspire-web --region $AwsRegion --query 'repositories[].repositoryName' --output table
+
+if ($LASTEXITCODE -ne 0) {
+    Write-ColorOutput "❌ ECR repositories verification failed" "Red"
+    throw "ECR repositories not found. Please check repository creation."
+}
+
 docker push $ApiImageUri
 if ($LASTEXITCODE -ne 0) {
+    Write-ColorOutput "❌ Failed to push aspire-api image. Repository URI: $ApiImageUri" "Red"
     throw "Failed to push aspire-api image"
 }
 
 docker push $WebImageUri
 if ($LASTEXITCODE -ne 0) {
+    Write-ColorOutput "❌ Failed to push aspire-web image. Repository URI: $WebImageUri" "Red"
     throw "Failed to push aspire-web image"
 }
 

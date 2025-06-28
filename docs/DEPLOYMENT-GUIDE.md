@@ -635,6 +635,8 @@ aws ecs describe-tasks \
 
 ### **Delete Everything**
 
+**Bash/Linux/macOS:**
+
 ```bash
 # Delete the entire deployment
 aws cloudformation delete-stack --stack-name ${ENVIRONMENT_NAME}-ecs-stack
@@ -648,6 +650,68 @@ aws ecr delete-repository --repository-name aspire-web --force --region $AWS_REG
 
 echo "✅ Cleanup completed"
 ```
+
+**PowerShell/Windows:**
+
+```powershell
+# Use the management script (recommended - with confirmation prompt)
+.\scripts\manage-deployment.ps1 -Action cleanup -EnvironmentName $ENVIRONMENT_NAME
+
+# Or manual cleanup
+aws cloudformation delete-stack --stack-name "$ENVIRONMENT_NAME-ecs-stack"
+
+# Wait for deletion to complete
+aws cloudformation wait stack-delete-complete --stack-name "$ENVIRONMENT_NAME-ecs-stack"
+
+# Optionally delete ECR repositories (this will delete all images)
+aws ecr delete-repository --repository-name aspire-api --force --region $AWS_REGION
+aws ecr delete-repository --repository-name aspire-web --force --region $AWS_REGION
+
+Write-Host "✅ Cleanup completed" -ForegroundColor Green
+```
+
+---
+
+## 🔧 PowerShell Management Helper
+
+**Windows users** can use the included PowerShell management script for common post-deployment tasks:
+
+### **Available Actions**
+
+```powershell
+# Check application health status
+.\scripts\manage-deployment.ps1 -Action health
+
+# Get application URLs and outputs
+.\scripts\manage-deployment.ps1 -Action urls
+
+# Check ECS service status
+.\scripts\manage-deployment.ps1 -Action status
+
+# Scale services (adjust number of instances)
+.\scripts\manage-deployment.ps1 -Action scale -DesiredCount 4
+
+# View recent application logs
+.\scripts\manage-deployment.ps1 -Action logs
+
+# Clean up entire deployment (interactive confirmation)
+.\scripts\manage-deployment.ps1 -Action cleanup
+```
+
+### **Example Usage**
+
+```powershell
+# Monitor a staging environment
+.\scripts\manage-deployment.ps1 -Action health -EnvironmentName "aspire-staging" -AwsRegion "us-west-2"
+
+# Scale production to handle more traffic
+.\scripts\manage-deployment.ps1 -Action scale -EnvironmentName "aspire-prod" -DesiredCount 6
+
+# Get all deployment URLs
+.\scripts\manage-deployment.ps1 -Action urls -EnvironmentName "aspire-prod"
+```
+
+This helper script provides a convenient way to manage your deployed stack without memorizing AWS CLI commands!
 
 ---
 

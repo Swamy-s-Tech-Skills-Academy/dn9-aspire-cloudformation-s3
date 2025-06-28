@@ -1,117 +1,157 @@
-# .NET 9 Aspire Cloudformation S3
+# .NET 9 Aspire CloudFormation S3 - Image Upload Demo
 
-🌩️ Hands-on .NET Aspire demo integrating AWS CloudFormation and Amazon S3. Learn to define infrastructure as code and seamlessly connect cloud resources to distributed applications.
+🌩️ A comprehensive .NET 9 Aspire demo showcasing image upload functionality with AWS CloudFormation and Amazon S3 integration. Learn to build scalable cloud-native applications with infrastructure as code.
 
 ## 🚀 Overview
 
-This repository provides a practical guide to using AWS CloudFormation with .NET Aspire, focusing on provisioning Amazon S3 buckets and integrating them into your applications. The demo will cover:
+This hands-on demo demonstrates how to build a complete image upload solution using .NET 9 Aspire, featuring:
 
-- Setting up AWS CloudFormation templates
-- Deploying S3 buckets
-- Integrating S3 with .NET Aspire applications
-- Image Upload and retrieval
+### **Core Features (Phase 1)**
 
-References:
+- 📤 **Image Upload API** - RESTful endpoints for image processing
+- 🎨 **Blazor Web Interface** - Modern UI for image upload and management
+- ☁️ **S3 Integration** - Secure cloud storage with AWS S3
+- 🏗️ **CloudFormation IaC** - Automated infrastructure provisioning
+- 📊 **Aspire Orchestration** - Service discovery and monitoring
 
-Absolutely, Swamy! This would make a phenomenal hands-on demo session that fuses real-world AWS provisioning with .NET Aspire’s developer elegance. Let’s put together a structured plan, and we’ll start by naming your GitHub repo:
+### **Future Roadmap**
 
----
+- 📬 **SQS Integration** - Async image processing queues
+- 🗄️ **DynamoDB** - Metadata and image catalog storage
+- 🔄 **Image Processing** - Thumbnail generation and optimization
+- 🔐 **Advanced Security** - IAM roles and bucket policies
 
-### 🗂 Suggested GitHub Repo Name Ideas
+## 🎯 What You'll Learn
 
-| Repo Name                      | Why It Works                                                   |
-| ------------------------------ | -------------------------------------------------------------- |
-| `aspire-aws-hands-on-demo`     | Straightforward, great for discoverability and search indexing |
-| `cloudnative-aspire-s3`        | Emphasizes the cloud-native aspect and core S3 integration     |
-| `aspire-cloudformation-lab`    | Perfect if the focus is on using IaC via CloudFormation        |
-| `shyvntech-aspire-on-aws`      | Highlights your branding and makes it community-specific       |
-| `dotnet-aspire-aws-stack-demo` | Fully descriptive, great for SEO and workshop listings         |
+- **CloudFormation Templates** - Infrastructure as Code best practices
+- **Aspire Service Orchestration** - Microservices coordination and discovery
+- **S3 Integration Patterns** - Secure file upload and storage strategies
+- **Blazor File Upload Components** - Modern web UI development
+- **RESTful API Design** - Image processing endpoints
+- **Cloud-Native Architecture** - Scalable distributed application patterns
 
----
-
-### 💡 Suggestion:
-
-**`aspire-aws-s3-cloudformation-demo`** — It strikes a balance between clarity and keyword strength, and it scales well as you expand the repo to include more AWS services later (like DynamoDB, Lambda, etc.).
-
----
-
-Would you like me to scaffold the repo structure next? I can outline the folder hierarchy, `README.md`, and even prep GitHub Actions workflow files for CI/CD if you’d like this to be share-ready for a community demo. Let’s package this into a session that leaves your audience both inspired and Git-cloning. 😄
-
-Perfect—`dotnet-aspire-cloudformation-s3` is a clean, descriptive, and highly searchable repo name. It communicates exactly what the demo is about while being flexible enough to expand later. Let’s get your repository structure and content teed up!
-
----
-
-### 📁 Recommended Repo Structure: `dotnet-aspire-cloudformation-s3`
+## 🏗️ Solution Architecture
 
 ```plaintext
-dotnet-aspire-cloudformation-s3/
-├── src/
-│   ├── AspireAwsStack.AppHost/
-│   ├── AspireAwsStack.ApiService/
-│   ├── AspireAwsStack.Web/
-│   └── AspireAwsStack.Resources/               # Optional: for storing CloudFormation templates
-├── resources/
-│   └── s3bucket.template                # CloudFormation JSON or YAML
-├── .github/
-│   └── workflows/
-│       └── deploy.yaml                  # GitHub Actions for CI/CD (optional)
-├── .devcontainer/                       # Optional: Dev container config for onboarding
-├── aspire.yaml                          # Aspire project file for orchestration
-├── README.md
-└── LICENSE
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Blazor Web    │───▶│   API Service    │───▶│   AWS S3        │
+│   (Upload UI)   │    │  (Image Upload)  │    │   (Storage)     │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌──────────────────┐
+                    │  Aspire AppHost  │
+                    │   (Orchestrator) │
+                    └──────────────────┘
+                                 │
+                    ┌──────────────────┐
+                    │  CloudFormation  │
+                    │  (Infrastructure)│
+                    └──────────────────┘
 ```
-
----
-
-### 📝 Initial `README.md` Outline
-
-````markdown
-# dotnet-aspire-cloudformation-s3
-
-Hands-on demo showcasing how to integrate **AWS CloudFormation** and **Amazon S3** in a `.NET Aspire` application.
-
-## 🌐 What You'll Learn
-
-- Define cloud infrastructure as code using AWS CloudFormation.
-- Seamlessly provision and integrate an S3 bucket into your Aspire app.
-- Trigger file uploads via API and wire up services with Aspire’s AppHost.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- .NET 8 SDK
-- AWS CLI with configured profile
-- Aspire workload installed (`dotnet workload install aspire`)
-- GitHub account (if using Actions)
+- **.NET 9 SDK** - Latest .NET runtime
+- **AWS CLI** - Configured with valid credentials
+- **Aspire Workload** - `dotnet workload install aspire`
+- **AWS Account** - With S3 and CloudFormation permissions
 
-### Run Locally
+### Quick Start
 
-```bash
-dotnet run --project src/AspireAwsStack.AppHost
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/yourusername/dn9-aspire-cloudformation-s3.git
+   cd dn9-aspire-cloudformation-s3
+   ```
+
+2. **Configure AWS credentials**
+
+   ```bash
+   aws configure
+   ```
+   
+   > **Note**: AWS credentials will be stored in `C:\Users\<YourUserName>\.aws\`
+   > - `credentials` file contains access keys
+   > - `config` file contains region and output preferences
+
+3. **Run the application**
+
+   ```bash
+   dotnet run --project src/AspireAwsStack.AppHost
+   ```
+
+4. **Access the applications**
+   - 🎯 **Aspire Dashboard**: `https://localhost:15888`
+   - 🌐 **Blazor Web App**: `https://localhost:7001`
+   - 🔌 **API Service**: `https://localhost:7002`
+
+## 📁 Project Structure
+
+```plaintext
+dn9-aspire-cloudformation-s3/
+├── src/
+│   ├── AspireAwsStack.AppHost/           # Aspire orchestration
+│   ├── AspireAwsStack.ApiService/        # Image upload API
+│   ├── AspireAwsStack.Web/               # Blazor web interface
+│   └── AspireAwsStack.ServiceDefaults/   # Shared configurations
+├── infrastructure/
+│   ├── s3-bucket.yaml                    # CloudFormation template
+│   └── iam-roles.yaml                    # IAM permissions
+├── docs/
+│   └── images/                           # Documentation assets
+├── .github/
+│   └── workflows/                        # CI/CD pipelines
+└── README.md
 ```
-````
 
-> CloudFormation stack will auto-deploy on launch. Check `.NET Aspire Dashboard` to monitor services.
+## 🛠️ Key Components
 
-## 📁 Resources
+### **AspireAwsStack.ApiService**
 
-- `resources/s3bucket.template` – S3 Bucket definition
-- `src/AspireAwsStack.ApiService` – API with file upload
-- `src/AspireAwsStack.Web` – Web UI triggering upload
+- Image upload endpoints (`POST /api/images`)
+- S3 client integration with AWS SDK
+- Image validation and processing
+- Metadata extraction and storage
 
-## 🤝 Community
+### **AspireAwsStack.Web (Blazor)**
 
-Built and maintained by [ShyvnTech](https://github.com/Swamy) for demo sessions and hands-on workshops.
+- File upload component with drag-and-drop
+- Image preview and progress tracking
+- Gallery view of uploaded images
+- Responsive modern UI
 
-```
+### **AspireAwsStack.AppHost**
+
+- Service discovery and configuration
+- CloudFormation stack management
+- Environment variable injection
+- Health check orchestration
+
+## 🌟 Features
+
+- ✅ **Drag & Drop Upload** - Intuitive file upload experience
+- ✅ **Image Preview** - Real-time preview before upload
+- ✅ **Progress Tracking** - Upload progress indicators
+- ✅ **Error Handling** - Comprehensive error management
+- ✅ **Security** - IAM-based access control
+- ✅ **Monitoring** - Aspire dashboard integration
+
+## 🔮 Upcoming Features
+
+- 🔄 **SQS Processing** - Async image processing workflows
+- 🗄️ **DynamoDB Catalog** - Image metadata and search
+- 🖼️ **Thumbnail Generation** - Automatic image optimization
+- 🔐 **Advanced Security** - Pre-signed URLs and bucket policies
+
+## 🤝 Contributing
+
+Built and maintained by **ShyvnTech** for educational demos and hands-on workshops.
 
 ---
 
-Would you like me to generate:
-1. The actual `s3bucket.template` file?
-2. A sample `Program.cs` snippet for the upload endpoint?
-3. The GitHub Actions workflow to automate S3-related tasks?
-
-Let’s get your hands-on session deploy-ready in no time 🌩️
-```
+⭐ **Star this repo** if it helps you learn .NET Aspire with AWS!

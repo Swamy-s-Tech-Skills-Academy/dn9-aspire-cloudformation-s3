@@ -1,0 +1,29 @@
+<Project>
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Common -->
+		<PackageVersion Include="Aspire.Hosting.AWS" Version="9.2.5" />
+		<PackageVersion Include="SonarAnalyzer.CSharp" Version="10.12.0.118525" />
+		<!--! AspireAwsStack.ApiService -->
+		<PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6" />
+		<PackageVersion Include="Scalar.AspNetCore" Version="2.5.3" />
+		<PackageVersion Include="AWSSDK.S3" Version="3.7.419.2" />
+		<PackageVersion Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.401" />
+		<!-- AspireAwsStack.AppHost -->
+		<PackageVersion Include="Aspire.Hosting.AppHost" Version="9.3.1" />
+		<PackageVersion Include="Aspire.Hosting.Redis" Version="9.3.1" />
+		<!-- AspireAwsStack.ServiceDefaults -->
+		<PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="9.6.0" />
+		<PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="9.3.1" />
+		<PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
+		<PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.12.0" />
+		<PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.12.0" />
+		<PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
+		<PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
+		<!-- AspireAwsStack.Web -->
+		<PackageVersion Include="Aspire.StackExchange.Redis.OutputCaching" Version="9.3.1" />
+	</ItemGroup>
+</Project>

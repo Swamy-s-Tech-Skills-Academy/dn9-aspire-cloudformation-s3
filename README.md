@@ -36,6 +36,31 @@ This hands-on demo demonstrates how to build a complete image upload solution us
 - **Cloud-Native Architecture** - Scalable distributed application patterns
 - **Environment Variable Management** - CloudFormation outputs to service configuration
 
+## 🏗️ Technology Stack
+
+### **Backend & Infrastructure**
+
+- **.NET 9** - Latest .NET framework with C# 13
+- **Aspire 9.3.1** - Cloud-native orchestration and service discovery
+- **AWS SDK for .NET** - S3 integration and AWS services
+- **CloudFormation** - Infrastructure as Code with JSON templates
+- **OpenAPI/Swagger** - API documentation and specification
+- **Scalar** - Modern API documentation UI
+
+### **Frontend & UI**
+
+- **Blazor Server** - Interactive server-side rendering
+- **Bootstrap** - Responsive CSS framework
+- **InputFile Components** - HTML5 file upload with validation
+- **SignalR** - Real-time UI updates (via Blazor Server)
+
+### **Development & Tooling**
+
+- **Central Package Management** - `Directory.Packages.props` for version control
+- **OpenTelemetry** - Distributed tracing and monitoring
+- **HTTP Resilience** - Retry policies and circuit breakers
+- **Service Discovery** - Aspire-based inter-service communication
+
 ## 🏗️ Solution Architecture
 
 ```plaintext
@@ -95,23 +120,34 @@ This demo is **fully functional** and demonstrates:
 | **API Service**      | `https://localhost:7XXX`           | RESTful API endpoints             |
 | **Scalar API Docs**  | `https://localhost:7XXX/scalar/v1` | Interactive API documentation     |
 
-### **📁 Project Structure**
+### **🌐 Web Application Pages**
 
-```
+| Page             | Route      | Description                                         |
+| ---------------- | ---------- | --------------------------------------------------- |
+| **Home**         | `/`        | Welcome page with project overview                  |
+| **Image Upload** | `/images`  | **Main feature** - Upload images to S3 with gallery |
+| **Counter**      | `/counter` | Demo interactive counter page                       |
+| **Weather**      | `/weather` | Demo weather forecast page                          |
+
+### **📁 Key Project Structure**
+
+```plaintext
 src/
 ├── AspireAwsStack.AppHost/              # Aspire orchestrator
 │   ├── infrastructure/
-│   │   └── resources.template           # CloudFormation template
-│   └── Program.cs                       # Service configuration
+│   │   └── resources.template           # CloudFormation template (JSON)
+│   └── Program.cs                       # Service configuration & deployment
 ├── AspireAwsStack.ApiService/           # Image upload API
-│   ├── Models/ImageModels.cs           # Data models
-│   ├── Services/S3ImageService.cs      # S3 operations
-│   └── Program.cs                      # API endpoints
+│   ├── Models/ImageModels.cs           # Data models & validation
+│   ├── Services/S3ImageService.cs      # S3 operations & upload logic
+│   └── Program.cs                      # API endpoints & Scalar UI setup
 ├── AspireAwsStack.Web/                  # Blazor frontend
-│   ├── Components/Pages/ImageUpload.razor  # Upload interface
-│   ├── Models/ImageModels.cs           # UI models
-│   └── Services/ImageUploadService.cs  # HTTP client service
+│   ├── Components/Pages/ImageUpload.razor  # Main upload interface
+│   ├── Models/ImageModels.cs           # UI-specific models
+│   ├── Services/ImageUploadService.cs  # HTTP client service
+│   └── WeatherApiClient.cs             # Demo weather service
 └── AspireAwsStack.ServiceDefaults/      # Shared configuration
+    └── Extensions.cs                   # Common service extensions
 ```
 
 ## 🚀 Getting Started
@@ -160,41 +196,76 @@ src/
 dn9-aspire-cloudformation-s3/
 ├── src/
 │   ├── AspireAwsStack.AppHost/           # Aspire orchestration
+│   │   ├── infrastructure/
+│   │   │   └── resources.template        # CloudFormation template (JSON)
+│   │   ├── Program.cs                    # AppHost configuration
+│   │   └── appsettings.json             # App settings
 │   ├── AspireAwsStack.ApiService/        # Image upload API
+│   │   ├── Models/
+│   │   │   └── ImageModels.cs           # Data models
+│   │   ├── Services/
+│   │   │   └── S3ImageService.cs        # S3 operations
+│   │   ├── Program.cs                   # API endpoints & configuration
+│   │   └── appsettings.json            # API settings
 │   ├── AspireAwsStack.Web/               # Blazor web interface
+│   │   ├── Components/
+│   │   │   ├── Layout/                  # Layout components
+│   │   │   └── Pages/
+│   │   │       ├── ImageUpload.razor    # Image upload page
+│   │   │       ├── Home.razor           # Home page
+│   │   │       ├── Counter.razor        # Demo counter page
+│   │   │       └── Weather.razor        # Demo weather page
+│   │   ├── Models/
+│   │   │   └── ImageModels.cs          # UI models
+│   │   ├── Services/
+│   │   │   └── ImageUploadService.cs   # HTTP client service
+│   │   ├── WeatherApiClient.cs         # Demo weather client
+│   │   └── Program.cs                  # Web app configuration
 │   └── AspireAwsStack.ServiceDefaults/   # Shared configurations
-├── infrastructure/
-│   ├── s3-bucket.yaml                    # CloudFormation template
-│   └── iam-roles.yaml                    # IAM permissions
+│       └── Extensions.cs               # Common service extensions
 ├── docs/
-│   └── images/                           # Documentation assets
+│   └── images/                         # Documentation assets
 ├── .github/
-│   └── workflows/                        # CI/CD pipelines
-└── README.md
+│   └── workflows/                      # CI/CD pipelines (empty)
+├── Directory.Build.props               # Build configuration
+├── Directory.Packages.props            # Centralized package management
+├── dn9-aspire-cloudformation-s3.sln   # Solution file
+├── .gitignore                         # Git ignore rules
+├── LICENSE                            # License file
+└── README.md                          # This documentation
 ```
 
 ## 🛠️ Key Components
 
 ### **AspireAwsStack.ApiService**
 
-- Image upload endpoints (`POST /api/images`)
-- S3 client integration with AWS SDK
-- Image validation and processing
-- Metadata extraction and storage
+- **Image Upload API**: `POST /api/images/upload` endpoint with file validation
+- **S3 Integration**: AWS SDK for S3 with bucket operations and public URL generation
+- **Scalar API Documentation**: Modern interactive API documentation at `/scalar/v1`
+- **File Validation**: Size limits (10MB), format validation (JPG, PNG, GIF, WebP, BMP)
+- **S3ImageService**: Dedicated service class for S3 operations and metadata handling
 
 ### **AspireAwsStack.Web (Blazor)**
 
-- File upload component with drag-and-drop
-- Image preview and progress tracking
-- Gallery view of uploaded images
-- Responsive modern UI
+- **Image Upload Page**: Interactive file upload with drag-and-drop support at `/images`
+- **Gallery Display**: Responsive image grid with thumbnails and metadata
+- **Progress Tracking**: Real-time upload progress indicators
+- **Navigation**: Home, Counter (demo), Weather (demo), and Image Upload pages
+- **ImageUploadService**: HTTP client service for API communication
+- **Interactive Server Rendering**: Real-time UI updates with `@rendermode InteractiveServer`
 
 ### **AspireAwsStack.AppHost**
 
-- Service discovery and configuration
-- CloudFormation stack management
-- Environment variable injection
-- Health check orchestration
+- **CloudFormation Integration**: Automatic S3 bucket provisioning with `resources.template`
+- **Service Discovery**: Aspire service orchestration and communication
+- **Environment Variables**: CloudFormation outputs passed to services (S3 bucket name)
+- **Infrastructure as Code**: JSON-based CloudFormation template with bucket policies and CORS
+
+### **AspireAwsStack.ServiceDefaults**
+
+- **Common Extensions**: Shared service configuration and resilience patterns
+- **OpenTelemetry**: Distributed tracing and monitoring setup
+- **Service Discovery**: HTTP client configuration for inter-service communication
 
 ## 🌟 Features
 

@@ -45,9 +45,6 @@
                             <div class="form-text">
                                 Supported formats: JPG, PNG, GIF, WebP, BMP (Max: 10MB)
                             </div>
-                            <!-- Debug info -->
-                            <small class="text-muted">Debug: selectedFile is @(selectedFile != null ? "NOT NULL" :
-                                                                "NULL")</small>
                         </div>
 
                         @if (selectedFile != null)
@@ -168,9 +165,7 @@
 
     private async Task OnFileSelected(InputFileChangeEventArgs e)
     {
-        Console.WriteLine($"OnFileSelected called with {e.FileCount} files");
         selectedFile = e.File;
-        Console.WriteLine($"Selected file: {selectedFile?.Name}");
         errorMessage = null;
         successMessage = null;
         await InvokeAsync(StateHasChanged);
@@ -250,4 +245,4 @@
         }
         return $"{len:0.##} {sizes[order]}";
     }
-}}
+}

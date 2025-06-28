@@ -9,7 +9,7 @@ IAWSSDKConfig awsConfig = builder.AddAWSSDKConfig()
                         .WithProfile("default")
                         .WithRegion(RegionEndpoint.USEast1);
 
-IResourceBuilder<ICloudFormationTemplateResource> cloudFormationStack = builder.AddAWSCloudFormationTemplate("AspireAwsStackResources", "resources.template")
+IResourceBuilder<ICloudFormationTemplateResource> cloudFormationStack = builder.AddAWSCloudFormationTemplate("AspireAwsStackResources", "infrastructure/resources.template")
     .WithReference(awsConfig);
 
 IResourceBuilder<RedisResource> cache = builder.AddRedis("cache");

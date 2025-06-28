@@ -132,7 +132,8 @@ function Test-AndCreateEcrRepository {
     if ($LASTEXITCODE -eq 0) {
         Write-ColorOutput "✅ $RepositoryName repository created successfully" "Green"
         return $true
-    } else {
+    }
+    else {
         Write-ColorOutput "❌ Failed to create $RepositoryName repository" "Red"
         return $false
     }

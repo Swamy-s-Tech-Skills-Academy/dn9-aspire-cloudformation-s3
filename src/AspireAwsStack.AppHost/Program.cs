@@ -5,7 +5,7 @@ IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(ar
 
 // Set up a configuration for the AWS SDK for .NET.
 IAWSSDKConfig awsConfig = builder.AddAWSSDKConfig()
-                        .WithProfile("dev")
+                        .WithProfile("default")
                         .WithRegion(RegionEndpoint.USEast1);
 
 IResourceBuilder<RedisResource> cache = builder.AddRedis("cache");

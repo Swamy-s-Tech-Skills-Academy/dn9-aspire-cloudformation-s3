@@ -74,8 +74,9 @@ This hands-on demo demonstrates how to build a complete image upload solution us
    ```bash
    aws configure
    ```
-   
+
    > **Note**: AWS credentials will be stored in `C:\Users\<YourUserName>\.aws\`
+   >
    > - `credentials` file contains access keys
    > - `config` file contains region and output preferences
 

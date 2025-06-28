@@ -83,7 +83,8 @@ imagesApi.MapPost("/upload", async (
 .WithName("UploadImage")
 .WithSummary("Upload an image to S3")
 .Accepts<IFormFile>("multipart/form-data")
-.Produces<ImageUploadResult>();
+.Produces<ImageUploadResult>()
+.DisableAntiforgery();
 
 // TODO: Add other endpoints later
 // - GET /api/images (list images)

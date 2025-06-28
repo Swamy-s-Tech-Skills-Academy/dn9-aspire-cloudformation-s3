@@ -1,13 +1,16 @@
-var builder = DistributedApplication.CreateBuilder(args);
+using Amazon;
+using Aspire.Hosting.AWS;
 
-//// Set up a configuration for the AWS SDK for .NET.
-//var awsConfig = builder.AddAWSSDKConfig()
-//                        .WithProfile("dev")
-//                        .WithRegion(RegionEndpoint.USWest2);
+IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(args);
 
-var cache = builder.AddRedis("cache");
+// Set up a configuration for the AWS SDK for .NET.
+IAWSSDKConfig awsConfig = builder.AddAWSSDKConfig()
+                        .WithProfile("dev")
+                        .WithRegion(RegionEndpoint.USEast1);
 
-var apiService = builder.AddProject<Projects.AspireAwsStack_ApiService>("apiservice");
+IResourceBuilder<RedisResource> cache = builder.AddRedis("cache");
+
+IResourceBuilder<ProjectResource> apiService = builder.AddProject<Projects.AspireAwsStack_ApiService>("apiservice");
 
 builder.AddProject<Projects.AspireAwsStack_Web>("webfrontend")
     .WithExternalHttpEndpoints()

@@ -1,10 +1,74 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "S3 bucket for AspireAwsStack image upload demo",
+  "Parameters": {
+    "Environment": {
+      "Type": "String",
+      "Default": "dev",
+      "Description": "Environment name (dev, staging, prod)"
+    }
+  },
   "Resources": {
-    "S3Bucket": {
+    "S3ImageBucket": {
       "Type": "AWS::S3::Bucket",
       "Properties": {
-        "BucketName": "[BUCKET_NAME]"
+        "BucketName": {
+          "Fn::Sub": "aspire-aws-images-${Environment}"
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "VersioningConfiguration": {
+          "Status": "Enabled"
+        },
+        "CorsConfiguration": {
+          "CorsRules": [
+            {
+              "AllowedHeaders": ["*"],
+              "AllowedMethods": ["GET", "PUT", "POST", "DELETE"],
+              "AllowedOrigins": ["*"],
+              "MaxAge": 3000
+            }
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "BucketName": {
+      "Description": "Name of the S3 bucket for image uploads",
+      "Value": {
+        "Ref": "S3ImageBucket"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-BucketName"
+        }
+      }
+    },
+    "BucketArn": {
+      "Description": "ARN of the S3 bucket",
+      "Value": {
+        "Fn::GetAtt": ["S3ImageBucket", "Arn"]
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-BucketArn"
+        }
+      }
+    },
+    "BucketDomainName": {
+      "Description": "Domain name of the S3 bucket",
+      "Value": {
+        "Fn::GetAtt": ["S3ImageBucket", "DomainName"]
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-BucketDomainName"
+        }
       }
     }
   }

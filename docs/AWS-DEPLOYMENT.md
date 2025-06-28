@@ -190,35 +190,124 @@ Create an enhanced CloudFormation template that includes ECS resources:
 
 For simpler deployments, use Elastic Beanstalk for web applications.
 
+> **⚠️ Important Considerations for Aspire Applications:**
+>
+> Elastic Beanstalk deploys **standalone applications** without Aspire's orchestration layer. This means:
+>
+> - ❌ No automatic service discovery between services
+> - ❌ No Aspire AppHost configuration and environment variables
+> - ❌ No built-in Redis, database connections, or other Aspire-managed resources
+> - ✅ You need to manually configure external services (Redis, databases, etc.)
+> - ✅ Best suited for single-service deployments or simple web apps
+
 ### **Prepare for Beanstalk Deployment**
+
+> **Important**: AWS Elastic Beanstalk support for .NET 9 may be limited. Check [AWS Beanstalk supported platforms](https://docs.aws.amazon.com/elasticbeanstalk/latest/platforms/platforms-supported.html) for current .NET 9 availability.
 
 1. **Modify Web Project for Beanstalk:**
 
    ```bash
    # Remove Aspire-specific dependencies for standalone deployment
+   # These packages depend on Aspire orchestration which won't be available in Beanstalk
    dotnet remove package Aspire.StackExchange.Redis.OutputCaching
+
+   # Ensure project targets .NET 9
+   # Check AspireAwsStack.Web.csproj has <TargetFramework>net9.0</TargetFramework>
    ```
 
-2. **Create deployment package:**
+   **Why remove Aspire packages?**
+
+   - Aspire packages require the AppHost orchestrator for service discovery and configuration
+   - Elastic Beanstalk deploys standalone applications without Aspire's orchestration layer
+   - These dependencies would cause runtime failures without the Aspire infrastructure
+
+   **Alternative for Beanstalk:** Replace with standard implementations:
 
    ```bash
-   dotnet publish src/AspireAwsStack.Web -c Release -o ./publish
+   # Add standard Redis output caching instead of Aspire version
+   dotnet add package Microsoft.Extensions.Caching.StackExchangeRedis
+
+   # Update Program.cs to use standard Redis configuration
+   # Replace: builder.AddRedisOutputCache("cache");
+   # With: builder.Services.AddStackExchangeRedisCache(options => {
+   #     options.Configuration = "your-redis-connection-string";
+   # });
+   ```
+
+2. **Create deployment package for .NET 9:**
+
+   ```bash
+   # Publish for linux-x64 (Beanstalk runtime)
+   dotnet publish src/AspireAwsStack.Web -c Release -r linux-x64 --self-contained false -o ./publish
    cd publish
    zip -r ../aspire-web-app.zip .
    ```
 
-3. **Deploy via AWS CLI:**
+3. **Alternative: Use Docker with Beanstalk for .NET 9:**
+
+   If .NET 9 isn't directly supported, use Docker deployment:
+
+   ```dockerfile
+   # Create Dockerfile in project root
+   FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+   WORKDIR /app
+   EXPOSE 5000
+
+   FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+   WORKDIR /src
+   COPY ["src/AspireAwsStack.Web/AspireAwsStack.Web.csproj", "src/AspireAwsStack.Web/"]
+   RUN dotnet restore "src/AspireAwsStack.Web/AspireAwsStack.Web.csproj"
+   COPY . .
+   WORKDIR "/src/src/AspireAwsStack.Web"
+   RUN dotnet publish "AspireAwsStack.Web.csproj" -c Release -o /app/publish
+
+   FROM base AS final
+   WORKDIR /app
+   COPY --from=publish /app/publish .
+   ENTRYPOINT ["dotnet", "AspireAwsStack.Web.dll"]
+   ```
+
+   Then deploy using Beanstalk Docker platform:
 
    ```bash
-   # Create Beanstalk application
-   aws elasticbeanstalk create-application --application-name aspire-web-app
+   # Create Dockerrun.aws.json
+   echo '{
+     "AWSEBDockerrunVersion": "1",
+     "Image": {
+       "Name": "aspire-web:latest",
+       "Update": "true"
+     },
+     "Ports": [
+       {
+         "ContainerPort": "5000"
+       }
+     ]
+   }' > Dockerrun.aws.json
 
-   # Create environment
+   # Deploy to Beanstalk with Docker
    aws elasticbeanstalk create-environment \
      --application-name aspire-web-app \
      --environment-name aspire-web-prod \
-     --solution-stack-name "64bit Amazon Linux 2023 v3.1.0 running .NET 8"
+     --solution-stack-name "64bit Amazon Linux 2023 v4.2.0 running Docker"
    ```
+
+4. **Deploy via AWS CLI:**
+
+   ```bash
+   # Check available .NET 9 solution stacks
+   aws elasticbeanstalk list-available-solution-stacks --query "SolutionStacks[?contains(@, '.NET')]"
+
+   # Create Beanstalk application
+   aws elasticbeanstalk create-application --application-name aspire-web-app
+
+   # Create environment with .NET 9
+   aws elasticbeanstalk create-environment \
+     --application-name aspire-web-app \
+     --environment-name aspire-web-prod \
+     --solution-stack-name "64bit Amazon Linux 2023 v4.0.0 running .NET 9"
+   ```
+
+   > **Note**: If the exact .NET 9 solution stack name differs, use the `list-available-solution-stacks` command above to find the correct name for .NET 9.
 
 ## ☁️ Option 3: AWS Lambda (Serverless)
 

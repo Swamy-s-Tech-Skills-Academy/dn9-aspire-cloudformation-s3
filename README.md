@@ -46,10 +46,10 @@ Perfect—`dotnet-aspire-cloudformation-s3` is a clean, descriptive, and highly 
 ```plaintext
 dotnet-aspire-cloudformation-s3/
 ├── src/
-│   ├── NoteApp.AppHost/
-│   ├── NoteApp.ApiService/
-│   ├── NoteApp.Web/
-│   └── NoteApp.Resources/               # Optional: for storing CloudFormation templates
+│   ├── AspireAwsStack.AppHost/
+│   ├── AspireAwsStack.ApiService/
+│   ├── AspireAwsStack.Web/
+│   └── AspireAwsStack.Resources/               # Optional: for storing CloudFormation templates
 ├── resources/
 │   └── s3bucket.template                # CloudFormation JSON or YAML
 ├── .github/
@@ -88,7 +88,7 @@ Hands-on demo showcasing how to integrate **AWS CloudFormation** and **Amazon S3
 ### Run Locally
 
 ```bash
-dotnet run --project src/NoteApp.AppHost
+dotnet run --project src/AspireAwsStack.AppHost
 ```
 ````
 
@@ -97,8 +97,8 @@ dotnet run --project src/NoteApp.AppHost
 ## 📁 Resources
 
 - `resources/s3bucket.template` – S3 Bucket definition
-- `src/NoteApp.ApiService` – API with file upload
-- `src/NoteApp.Web` – Web UI triggering upload
+- `src/AspireAwsStack.ApiService` – API with file upload
+- `src/AspireAwsStack.Web` – Web UI triggering upload
 
 ## 🤝 Community
 

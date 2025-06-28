@@ -1,5 +1,6 @@
 using Amazon;
 using Aspire.Hosting.AWS;
+using Aspire.Hosting.AWS.CloudFormation;
 
 IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(args);
 
@@ -8,9 +9,16 @@ IAWSSDKConfig awsConfig = builder.AddAWSSDKConfig()
                         .WithProfile("default")
                         .WithRegion(RegionEndpoint.USEast1);
 
+IResourceBuilder<ICloudFormationTemplateResource> cloudFormationStack = builder.AddAWSCloudFormationTemplate("AspireAwsStackResources", "resources.template")
+    .WithReference(awsConfig);
+
 IResourceBuilder<RedisResource> cache = builder.AddRedis("cache");
 
-IResourceBuilder<ProjectResource> apiService = builder.AddProject<Projects.AspireAwsStack_ApiService>("apiservice");
+IResourceBuilder<ProjectResource> apiService = builder.AddProject<Projects.AspireAwsStack_ApiService>("apiservice")
+                                                    .WithReference(cloudFormationStack)
+                                                    .WaitFor(cloudFormationStack)
+                                                    .WithReference(cache)
+                                                    .WaitFor(cache);
 
 builder.AddProject<Projects.AspireAwsStack_Web>("webfrontend")
     .WithExternalHttpEndpoints()

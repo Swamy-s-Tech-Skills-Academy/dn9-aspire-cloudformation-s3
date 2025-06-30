@@ -55,6 +55,7 @@ dotnet run
 _"Let's explore what Aspire gives us out of the box:"_
 
 **Aspire Dashboard Features:**
+
 - 🎯 **Service Overview** - All services in one view
 - 📊 **Real-time Metrics** - CPU, memory, request rates
 - 📋 **Structured Logs** - Centralized logging across services
